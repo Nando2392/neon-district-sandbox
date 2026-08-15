@@ -1,4 +1,4 @@
-// Copyright Neon District Sandbox. Public benchmark repo — original content only.
+// Copyright Neon District Sandbox. Public benchmark repo — original content only
 
 #include "Core/NDGameInstance.h"
 #include "Kismet/GameplayStatics.h"

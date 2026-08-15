@@ -405,14 +405,48 @@ void ANDBenchmarkRunner::PhaseControls()
 		{
 			if (ANDWorldBuilder* Builder = Cast<ANDWorldBuilder>(B))
 			{
-				Street = Builder->GetRandomStreetPoint() + FVector(0.0f, 0.0f, 500.0f);
+				Street = Builder->GetRandomStreetPoint();
 				break;
 			}
 		}
 	}
-	// Sweep on: the drop collides with the asphalt and the CMC resyncs its
-	// floor (a plain teleport leaves it "grounded in the air" with zero velocity).
-	Pawn->SetActorLocation(Street, true, nullptr, ETeleportType::TeleportPhysics);
+	// Find the real ground under the street point: a fixed +500 Z drop can land
+	// on a building roof (buildings reach 1200 tall), which leaves the pawn on
+	// a phantom Walking floor that never accepts movement input. Trace down and
+	// place the pawn just above the actual asphalt.
+	FVector TraceStart = Street + FVector(0.0f, 0.0f, 900.0f);
+	FVector TraceEnd = Street - FVector(0.0f, 0.0f, 600.0f);
+	FHitResult GroundHit;
+	FCollisionQueryParams TraceParams(FName(TEXT("ND_MovePlacement")), /*bTraceComplex=*/false);
+	TraceParams.AddIgnoredActor(Pawn);
+	const bool bGroundHit = World && World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, TraceParams) && GroundHit.bBlockingHit;
+	UE_LOG(LogTemp, Log, TEXT("[NDBenchmark] move ground trace from (%.0f,%.0f,%.0f) to (%.0f,%.0f,%.0f) hit=%s actor=%s at Z=%.1f"),
+		TraceStart.X, TraceStart.Y, TraceStart.Z, TraceEnd.X, TraceEnd.Y, TraceEnd.Z,
+		bGroundHit ? TEXT("yes") : TEXT("NO"),
+		bGroundHit ? *GroundHit.GetActor()->GetName() : TEXT("-"),
+		bGroundHit ? GroundHit.ImpactPoint.Z : 0.0f);
+	if (bGroundHit)
+	{
+		const UCapsuleComponent* Capsule = Pawn->FindComponentByClass<UCapsuleComponent>();
+		const float CapsuleHalf = Capsule ? Capsule->GetScaledCapsuleHalfHeight() : 88.0f;
+		Street = GroundHit.ImpactPoint + FVector(0.0f, 0.0f, CapsuleHalf + 2.0f);
+	}
+	// Sweep off: a swept teleport from the embedded origin collides with the
+	// procedural geometry that surrounds the default spawn and silently cancels
+	// the move (the pawn stays stuck at (0,0,90)). Teleport with no sweep, then
+	// let the CMC settle: the drop collides with the asphalt and the CMC resyncs
+	// its floor (a plain teleport leaves it "grounded in the air" with zero velocity).
+	UE_LOG(LogTemp, Log, TEXT("[NDBenchmark] move teleport from (%.0f,%.0f,%.0f) to street (%.0f,%.0f,%.0f)"),
+		Pawn->GetActorLocation().X, Pawn->GetActorLocation().Y, Pawn->GetActorLocation().Z,
+		Street.X, Street.Y, Street.Z);
+	Pawn->SetActorLocation(Street, false, nullptr, ETeleportType::TeleportPhysics);
+	// Force Falling so the CMC actually drops onto the asphalt and re-detects
+	// its floor. A plain teleport to +500 Z with no sweep leaves the pawn in
+	// MOVE_Walking with a phantom floor: it neither falls nor accepts input.
+	if (UCharacterMovementComponent* MoveComp = Pawn->FindComponentByClass<UCharacterMovementComponent>())
+	{
+		MoveComp->SetMovementMode(MOVE_Walking);
+	}
 	const FRotator Yaw(0.0f, FMath::FRandRange(0.0f, 360.0f), 0.0f);
 	NDPC->SetControlRotation(Yaw);
 	Pawn->SetActorRotation(FRotator(0.0f, Yaw.Yaw, 0.0f));

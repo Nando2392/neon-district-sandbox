@@ -7,12 +7,31 @@
 #include "UI/NDHUDWidget.h"
 
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ConstructorHelpers.h"
 
 ANDNPCCharacter::ANDNPCCharacter()
 {
-	NPCVisual = GetMesh(); // mesh assigned in editor (Manny/Quinn/Mixamo import)
+	// Human NPCs need no physics but do need a simple visual proxy that works
+	// with zero asset dependency. The engine SkeletalMesh is empty, so attach a
+	// capsule + body mesh (Cube scaled to a standing figure). The mesh is tinted
+	// per-role by ConfigureNPC.
+	NPCVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NPCVisual"));
+	NPCVisual->SetupAttachment(RootComponent);
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	{
+		NPCVisual->SetStaticMesh(Cube);
+		NPCVisual->SetRelativeScale3D(FVector(0.5f, 0.5f, 1.8f)); // ~humanoid silhouette
+		NPCVisual->SetRelativeLocation(FVector(0, 0, -90.0f)); // align with capsule standing height
+		NPCVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		NPCVisual->bCastDynamicShadow = false;
+	}
 }
 
 void ANDNPCCharacter::BeginPlay()
@@ -28,6 +47,57 @@ void ANDNPCCharacter::ConfigureNPC(bool bInPolice, const FString& InDisplayName,
 	DisplayName = InDisplayName;
 	MissionRole = InRole;
 	OutfitVariant = OutfitVariantIn;
+
+	// Tint the static mesh body per role using the engine neutral material.
+	static FName ColorParam = TEXT("NeonColor");
+	if (NPCVisual && NPCVisual->GetStaticMesh())
+	{
+		if (UMaterialInterface* BaseMat = NPCVisual->GetMaterial(0))
+		{
+			if (UMaterialInstanceDynamic* ExistingMID = Cast<UMaterialInstanceDynamic>(BaseMat))
+			{
+				NPCVisual->SetMaterial(0, ExistingMID);
+			}
+			else if (UMaterial* Parent = Cast<UMaterial>(BaseMat))
+			{
+				UMaterialInstanceDynamic* NewMID = UMaterialInstanceDynamic::Create(Parent, this);
+				NPCVisual->SetMaterial(0, NewMID);
+			}
+			else
+			{
+				// Not a material instance we can tint — create one from BasicShapeMaterial.
+				UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(
+					nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+				if (EngineMat)
+				{
+					UMaterialInstanceDynamic* NewMID = UMaterialInstanceDynamic::Create(EngineMat, this);
+					NPCVisual->SetMaterial(0, NewMID);
+				}
+			}
+		}
+	}
+
+	// Role color (neon palette to match the district).
+	FLinearColor RoleColor;
+	if (MissionRole == ENPCMissionRole::MissionGiver) // Mei
+		RoleColor = FLinearColor(1.0f, 0.10f, 0.60f);   // magenta
+	else if (MissionRole == ENPCMissionRole::Delivery) // Nova
+		RoleColor = FLinearColor(1.0f, 0.90f, 0.10f);   // gold
+	else if (MissionRole == ENPCMissionRole::Package)
+		RoleColor = FLinearColor(1.0f, 0.60f, 0.90f);   // pink
+	else if (bPolice)
+		RoleColor = FLinearColor(0.10f, 0.90f, 1.00f);  // cyan
+	else
+		RoleColor = FLinearColor(0.20f, 1.0f, 0.40f);   // green
+
+	if (NPCVisual)
+	{
+		if (UMaterialInstanceDynamic* TintMID = Cast<UMaterialInstanceDynamic>(NPCVisual->GetMaterial(0)))
+		{
+			TintMID->SetVectorParameterValue(ColorParam, RoleColor);
+			TintMID->SetScalarParameterValue(TEXT("EmissiveStrength"), 3.0f);
+		}
+	}
 
 	if (ANDNPCAIController* AIC = Cast<ANDNPCAIController>(GetController()))
 	{

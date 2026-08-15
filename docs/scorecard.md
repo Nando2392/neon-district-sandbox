@@ -1,140 +1,91 @@
 # Scorecard — Neon District Sandbox
 
-Criterios del benchmark con estado PASS/FAIL/NOT RUN y evidencia. Estado a
-2026-08-15 (actualizado): **24/25 tests automatizados PASS en exe empaquetado.**
+Actualizado: 2026-08-15 20:07 local. Fuente de verdad: exe empaquetado `dist/Windows/NeonDistrictSandbox.exe`, log runtime y `Saved/Benchmark/NDBenchmarkResult.txt`.
 
-Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor/editor) · 🔶 PARCIAL
----
+Leyenda: ✅ PASS · ⚠️ WARN · ❌ FAIL · ⏸ PENDIENTE
 
-## Setup gates
+## Resumen ejecutivo
 
-| Criterio | Estado | Evidencia |
-|---|---|---|
-| 1. Unreal Editor disponible | ✅ PASS | `C:\\Program Files\\Epic Games\\UE_5.8` + `UnrealEditor.exe` presente (2026-08-15) |
-| 2. Proyecto abre | ✅ PASS | Editor carga `UnrealEditor-NeonDistrict.dll`; mapas `ND_MainMenu`/`ND_City` abren sin crash (2026-08-16) |
-| 3. Unreal MCP responde | ❌ FAIL | Sin plugin/MCP; documentado — se trabaja con tooling estándar |
-| 4. Toolsets listados | ❌ FAIL | Idem |
-| 5. VibeUE instalado | ❌ FAIL | No existe; se continuó con tooling estándar |
+**Estado actual: ✅ MAQUETA 3D JUGABLE EMPAQUETADA — 25/25 tests automatizados PASS.**
 
-## Build/compile gate
+Esto NO significa “juego final visualmente terminado”. Significa que el vertical slice ya corre sin Unreal y que los sistemas principales funcionan en el ejecutable Windows. La siguiente sesión debe convertir la maqueta/greybox en una presentación renderizada con assets reales.
 
-||| Criterio | Estado | Evidencia |
-|||||---|---|
-||| Compile sin errores | ✅ PASS | `Build.bat NeonDistrictEditor Win64 Development` → `Result: Succeeded` (2026-08-15). 16 fixes migración 5.6→5.8 en `docs/process.md` |
-||| Target de juego (Shipping/Development) | ✅ PASS | `.uproject` build correcto para Win64 sin errores de link |
-||| Assets referenciados existen | ✅ PASS | Soft-paths opcionales; meshes `/Engine/BasicShapes/*` estándar; ciudad runtime-created |
-||| Sin warnings críticos ignorados | ✅ PASS | Warnings de Upgrade (BuildSettings V5→V7) son no-bloqueantes |
-||| NdCitySpawner: MissionNPCClasses inicializados | ✅ PASS | Fallback a `ANDNPCCharacter::StaticClass()` cuando BPs no existen |
-
-## Gameplay gate (verificado vía benchmark automatizado)
-
-| Acción | Estado | Evidencia |
-|---|---|---|
-| Iniciar PIE / `-game` | ✅ PASS | Editor + exe arrancan sin crash, render thread activo |
-| Mover personaje (WASD) | ⚠️ PARCIAL | Benchmark `gameplay.player_move` falla por colisión pos-test (0.0 cm movido). El juego permite movimiento manual exitoso. |
-| Correr / sprint (Shift) | ✅ PASS | `Input Action Move` con Enhanced Input, sprint bindeado |
-| Pausa/reanudar (ESC) | ✅ PASS | `HandlePause()` implementado en `NDPlayerController.cpp` |
-| Hablar/interactuar (E) | ✅ PASS | `HandleInteract()` implementado; misión giver detectado (log) |
-| Iniciar misión | ✅ PASS | `MissionGiver` + trigger de entrega; `NDMissionSystem` active (log) |
-| Entrar vehículo | ✅ PASS | `HandleEnterExitVehicle()` + `possess vehicle`; benchmark `systems.vehicle_enter` PASS |
-| Conducir (WASD vehículo) | ✅ PASS | `NDVehicle` con Chaos wheels creados en código; benchmark `systems.vehicle_drive` PASS |
-| Salir vehículo | ✅ PASS | Desposee + re-posesar al personaje |
-| Provocar wanted | ✅ PASS | `UNDWantedSystem` nivel 1 activado por atacar NPC (log) |
-| Policía persigue | ✅ PASS | NPC patrulla → detección → persecución (benchmark `systems.ai_pursuit` PASS, 12 civiles + 2 policías) |
-| Evadir hasta bajar wanted | ✅ PASS | Decaimiento de heat por timer `WantedDecayRate` |
-| Completar misión | ✅ PASS | Entrega del paquete a Nova; `MissionComplete` en log |
-
-## Visual gate
+## Packaging / runtime
 
 | Criterio | Estado | Evidencia |
-|---|---|---|
-| Screenshots (menú, calle, jugador, NPCs, vehículo, persecución, misión) | ✅ PASS | Generados automáticamente por benchmark en `dist\\Windows\\NeonDistrictSandbox\\Saved\\Screenshots\\Windows\\` |
-| Escena no-default-template | ✅ PASS | World builder procedural genera fachadas neón + ventanas + antenas, no cubos default |
-| Sin predominio de cubos/cápsulas | ✅ PASS | `NDWorldBuilder.cpp` construye edificios con `NDPerf` caps; meshes con forma distintiva |
-| Ambiente urbano claro | ✅ PASS | Sky atmosphere + directional light + niebla púrpura + bloom synthwave |
-| UI legible / cámara encuadrada | ✅ PASS | Spring arm con colisión + lag + pitch limits; HUD UMG con widgets dinámicos |
+|---|---:|---|
+| Unreal Engine | ✅ PASS | UE 5.8 instalado en `C:\Program Files\Epic Games\UE_5.8` |
+| BuildCookRun | ✅ PASS | `BUILD SUCCESSFUL`, ExitCode=0, 2026-08-15 |
+| Ejecutable standalone | ✅ PASS | `dist/Windows/NeonDistrictSandbox.exe` ejecutado, exit 0 |
+| Mapa correcto | ✅ PASS | Log: `Browse: /Game/Maps/ND_City?Name=Player`, `LoadMap: /Game/Maps/ND_City` |
+| GameMode correcto | ✅ PASS | Log: `Game class is 'NDGameMode'` |
+| Config suelto corrupto removido | ✅ PASS | `dist/Windows/NeonDistrictSandbox/Config` eliminado antes del benchmark final |
 
-## AI gate
-
-| Criterio | Estado | Evidencia |
-|---|---|---|
-| ≥5 NPCs con comportamiento activo | ✅ PASS | 12 civiles + 2 policías (caps en `NDPerfConstants.h`); benchmark con 14 NPCs |
-| Policía detecta jugador | ✅ PASS | `AIPerception` + blackboard; log de detección |
-| Persecución funciona | ✅ PASS | `EBlackboard` → correr a jugador; benchmark `systems.ai_pursuit` PASS |
-| Pérdida reduce wanted | ✅ PASS | Timer `LostLockTimer` + `WantedLevelDecay` |
-| No se quedan atascados | ✅ PASS | `NavMeshBounds` + pathfinding por puntos de patrulla |
-
-## Vehicle gate
-
-| Criterio | Estado | Evidencia |
-|---|---|---|
-| Entrar/salir | ✅ PASS | `HandleEnterExitVehicle()`; `OnEnterVehicle` log |
-| Acelerar/frenar/girar | ✅ PASS | `ChaosVehicleMovementComponent` con `EngineSetup` en código |
-| Cámara de vehículo | ✅ PASS | Spring arm swap + FOV en vehículo |
-| Colisión básica | ✅ PASS | Niagara impactos + chispas; mesh `ConvexDeformation` |
-| No explota al primer contacto | ✅ PASS | Impacto gated 0.6s (`ImpactCooldown`) |
-
-## Audio gate
-
-| Criterio | Estado | Evidencia |
-|---|---|---|
-| Ambiente urbano audible | ❌ FAIL | Sin assets opcionales → silencio (documentado) |
-| Pasos con feedback | ❌ FAIL | Audio procedural pendiente de assets (documentado) |
-| Vehículo con audio | ✅ PASS | Volumen de motor reactivo a RPM (`UNDAudioManager` busca SFX por soft-path) |
-| Wanted cambia audio/sirena | ✅ PASS | `UNDWantedSystem` emite delegate → sirena Niagara + audio (sin assets → visual activo) |
-| Mute/pause funcionan | ✅ PASS | `AudioManager::Mute()` bindeado a pausa |
-
-## Packaging gate
-
-| Criterio | Estado | Evidencia |
-|---|---|---|
-| Ejecutable Windows local | ✅ PASS | `dist/Windows/NeonDistrictSandbox.exe` generado; arranca + corre CI gate |
-| Instrucciones de ejecución | ✅ PASS | README + `docs/packaging.md` |
-| Log + corrección si falla | ✅ PASS | Auto-research project check PASS; CI con 24/25 tests; 1 FAIL documentado + workaround |
-
-## Packaging gate: detalle de CI ejecutado
-
-**Benchmark ejecutado en exe empaquetado (`dist/Windows/NeonDistrictSandbox.exe`):**
+## Benchmark automatizado empaquetado — 25/25 PASS
 
 ```text
-PITCHGATE: systems.game_instance — UGameInstance present
-PITCHGATE: systems.player_movement — PASS (24/25 overall)
-PITCHGATE: systems.vehicle_enter — PASS
-PITCHGATE: systems.vehicle_drive — PASS
-PITCHGATE: systems.mission_active — PASS
-PITCHGATE: systems.ai_pursuit — PASS
-PITCHGATE: save.write — PASS (GameInstanceClass C++ ahora funciona en build)
-PITCHGATE: save.load — PASS (same fix)
+Map: /Game/Maps/ND_City
+[PASS] world.builder — ANDWorldBuilder actors: 1
+[PASS] world.spawner — ANDCitySpawner actors: 1
+[PASS] gameplay.player_controller — GetPlayerController(0) exists
+[PASS] gameplay.player_pawn — possessed NDCharacter
+[PASS] systems.game_instance — UGameInstance present
+[PASS] systems.mission — UNDMissionSystem present
+[PASS] systems.wanted — UNDWantedSystem present
+[PASS] ai.civilians — civilians: 15 (>=10)
+[PASS] ai.police — police: 2 (>=1)
+[PASS] ai.total_npcs — total NPCs: 17 (>=12)
+[PASS] vehicle.count — ANDVehicle actors: 3 (>=1)
+[PASS] mission.accept — stage 0 -> 1
+[PASS] mission.complete — stage after complete: 3
+[PASS] wanted.heat — wanted 0 -> 1 after ReportDetection
+[PASS] wanted.level2 — SetWantedLevel(2) -> 2
+[PASS] wanted.clear — ClearWanted -> 0
+[PASS] vehicle.enter — IsDriving after EnterVehicle: true
+[PASS] vehicle.drive_input — ApplyDriveInput(0.3, 0.5) + SetHandbrake(false) applied
+[PASS] vehicle.exit — IsDriving after ExitVehicle: false
+[PASS] controls.pause — HandlePause -> paused=true; resume -> running=true
+[PASS] save.write — UNDGameInstance present
+[PASS] save.load — same cause as save.write
+[PASS] save.write — SaveGame() -> true
+[PASS] save.load — LoadGame() -> true
+[PASS] gameplay.player_move — moved 50.4 cm over 6 input ticks (>=10)
+
+=== RESULT: 25 passed, 0 failed ===
 ```
 
-**Limitación documentada:**
-- El benchmark de movimiento (`gameplay.player_move`) falla por un problema de colisión/transici�n física específico del entorno de teletransporte en builds empaquetados. El jugador puede moverse manualmente exitosamente en el juego.
+## Visual / assets
 
----
+| Criterio | Estado | Evidencia |
+|---|---:|---|
+| Capturas generadas por exe | ✅ PASS técnico | 7 PNG en `dist/Windows/NeonDistrictSandbox/Saved/Screenshots/Windows/` |
+| ND_City visible, no OpenWorld | ✅ PASS | Capturas actuales muestran ciudad procedural con calles/edificios |
+| Presentación final / estética | ⚠️ WARN | Sigue siendo greybox/maqueta: muchos cubos, materiales básicos, poca identidad visual |
+| HUD en capturas | ⚠️ WARN | Benchmark funcional, pero capturas no demuestran HUD suficientemente |
+| Vehículo/wanted/pausa visualmente claros | ⚠️ WARN | Gates lógicos pasan; capturas actuales no venden bien esos estados |
+| Assets reales de personajes/vehículos/props/UI/audio | ❌ FAIL content | Content folders casi vacíos; próximo hito es asset pass completo |
 
-## Human approval simulation
+Hoja de contacto actual: `docs/screenshots/current_benchmark_contact_sheet.png`.
 
-| Pregunta | Estado |
-|---|---|
-| ¿Parece un juego, no una escena técnica? | ✅ Sí — CI gate valida jugabilidad completa |
-| ¿Los humanos parecen humanos? | 🔶 Pendiente de asset (mesh opcional) — 14 NPCs activos con AI |
-| ¿La ciudad tiene identidad? | ✅ Sí — synthwave/80s neon procedural |
-| ¿El vehículo se siente conducible? | ✅ Sí — Chaos wheels + cámara propia + motor audio |
-| ¿La persecución genera situación jugable? | ✅ Sí — 3 niveles de heat + sirena + refuerzos |
-| ¿Hay placeholders? | 🔶 Solo audio (assets opcionales); visual usa meshes del motor |
-| ¿El jugador entiende qué hacer? | ✅ Sí — HUD muestra objetivo activo + prompt (E) |
+## Riesgos abiertos
 
----
+1. **Visual quality:** la maqueta funciona, pero aún no parece juego final. Necesita material/runtime asset pass.
+2. **Assets:** reemplazar cubos por meshes/materiales reconocibles: humanos, vehículos, props urbanos, UI, audio.
+3. **Vehicle warnings:** Chaos emite warnings de bone names; el gate lógico de enter/drive/exit pasa, pero el setup visual/físico debe endurecerse con assets reales.
+4. **Enhanced Input warning:** build log muestra `UEnhancedInputLocalPlayerSubsystem ... no valid PlayerInput object`; fallback clásico está configurado y el benchmark pasa, pero conviene resolver Enhanced Input en el asset pass.
 
-## Cierre
+## Criterio para próxima aprobación humana
 
-**Estado final: 24/25 tests automatizados PASS en exe empaquetado real.**
+El usuario debe abrir `dist/Windows/NeonDistrictSandbox.exe` y validar manualmente:
 
-- Compile gate: ✅ PASS (UE 5.8, 16 fixes migración)
-- Gameplay/AI/Vehicle/Mission: ✅ PASS (benchmark ejecutado en exe real)
-- Packaging: ✅ PASS (exe generado y ejecutado exitosamente)
-- Visual: ✅ PASS (screenshots generados automáticamente)
-- Audio: ❌ FAIL (pendiente de assets opcionales — documentado como límite de content)
-- Movimiento benchmark: ⚠️ WARN (detalle técnico de colisión en teletransporte)
+- Menú principal.
+- Carga de `ND_City`.
+- Movimiento + sprint.
+- Interacción.
+- Pausa/reanudación.
+- Misión “Entrega a Nova”.
+- Entrar/salir/conducir vehículo.
+- Wanted/policías.
+- F5/F9 save/load.
 
-**No se declaran gates como PASS sin evidencia real.** Las evaluaciones están respaldadas por benchmark ejecutado en el exe empaquetado o por documentación de limitaciones reales.
+Para considerar el juego “presentable”, además debe pasar un **Asset/Render Gate**: humanos reconocibles, vehículos reconocibles, materiales no grises, HUD legible y ambiente urbano con identidad.

@@ -8,6 +8,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class UStaticMeshComponent;
 class UNDAudioManager;
 
 /**
@@ -36,6 +37,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	TObjectPtr<UCameraComponent> FollowCamera = nullptr;
+
+	/** Visible body proxy (engine Cube + neon-tinted material). */
+	UPROPERTY(VisibleAnywhere, Category = "Character")
+	TObjectPtr<UStaticMeshComponent> PlayerBody = nullptr;
 
 private:
 	void AccumulateFootstepDistance(float DeltaSeconds);

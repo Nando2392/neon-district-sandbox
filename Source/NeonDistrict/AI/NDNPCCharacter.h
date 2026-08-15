@@ -62,8 +62,8 @@ public:
 	int32 OutfitVariant = 0;
 
 protected:
-	UPROPERTY(VisibleAnywhere, Category = "NPC")
-	TObjectPtr<USkeletalMeshComponent> NPCVisual = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCVisual = nullptr;
 
 private:
 	void NotifyHUD(const FText& Message);

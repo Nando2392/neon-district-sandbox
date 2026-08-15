@@ -95,9 +95,9 @@ Problemas encontrados:
 - `NDInputAssetGenerator.cpp` necesitaba logging sin `UnrealEditor.h` en builds de editor → simplificado a usar `GEngine->AddOnScreenDebugMessage`.
 - `NDCreateInputsCommandlet.cpp` necesitaba `#include "Packages.h"` → removido (no existe en UE 5.8).
 
-### Gate: Benchmark automatizado
+### Gate: Benchmark automatizado — histórico, SUPERADO por cierre 25/25
 
-Resultado del ejecutado en el exe empaquetado:
+Resultado histórico del ejecutado en el exe empaquetado (ya no es el estado final):
 
 ```
 [PASS] world.builder — ANDWorldBuilder actors: 1
@@ -135,7 +135,52 @@ El FALL y settling falla en el build empaquetado.
 
 ---
 
-## Skills cargadas / disponibles (obligatorias)
+## 2026-08-15 — Fix descriptor .uproject (post-benchmark)
+
+### Gate: BuildCookRun (packaging) — **PASS**
+
+**Error**: `Failed to open descriptor file
+C:/Users/fjmn2/Dev/neon-district-sandbox/NeonDistrict.uproject`.
+
+**Causa raíz**: El archivo descriptor real se llama
+`NeonDistrictSandbox.uproject`, pero `scripts/build_verify.sh`
+referenciaba el nombre corto `NeonDistrict.uproject`. El módulo C++ y el
+target siguen nombrados `NeonDistrict` (correcto) — no se debe mezclar el
+nombre del módulo con el del archivo `.uproject`.
+
+**Fix aplicado**:
+1. `rg "NeonDistrict\.uproject"` en el repo → solo `build_verify.sh` tenía
+   la referencia incorrecta. Reemplazado por `NeonDistrictSandbox.uproject`.
+2. No se renombró el módulo C++ `NeonDistrict`; solo se corrigió el path del
+   descriptor.
+3. Para abrir en editor:
+   `UnrealEditor.exe ".../NeonDistrictSandbox.uproject"`.
+4. El exe empaquetado real vive en
+   `dist/Windows/NeonDistrictSandbox/Binaries/Win64/NeonDistrict.exe`
+   (no en `dist/Windows/NeonDistrictSandbox.exe`, que es un bootstrap).
+
+**Errores de compilación C++ corregidos en el rebuild**:
+- `C2039: 'SetCastDynamicShadow': is not a member of 'UStaticMeshComponent'`
+  — En UE 5.8 el setter no está expuesto para `UStaticMeshComponent`. Reemplazado
+  por `NPCVisual->bCastDynamicShadow = false` en `NDNPCCharacter.cpp` y
+  `PlayerBody->bCastDynamicShadow = false` en `NDCharacter.cpp`.
+- `C2446: ':': no conversion from 'UCapsuleComponent *' to 'USkeletalMeshComponent *'`
+  — `NPCVisual->SetupAttachment(GetMesh() ? GetMesh() : GetCapsuleComponent())`
+  fallaba por tipos. Corregido a `NPCVisual->SetupAttachment(RootComponent)`.
+- Shadowing `MID` → renombrado a `ExistingMID` / `NewMID` / `TintMID` en
+  `NDNPCCharacter.cpp`.
+- Include de orden: añadido `#include "Materials/MaterialInstanceDynamic.h"`
+  al inicio de `NDNPCCharacter.cpp` y `#include "Components/PrimitiveComponent.h"`.
+
+**Resultado**: `BuildCookRun BUILD SUCCESSFUL` (ExitCode=0). El exe arranca sin
+error de descriptor, monta los paks yendo a `NeonDistrictSandbox-Content-Pak`,
+ inicializa D3D12 en la RTX 4070 sin warnings de Blueprint faltantes.
+
+**Nota**: `NDCitySpawner.cpp` ya no referencia `BP_Civilian` (eliminados los
+`FClassFinder` que causaban `Failed to find object` en runtime) — el warning
+desapareció.
+
+---
 
 Leídas desde `C:\\Users\\fjmn2\\Dev\\aaabench-src\\.claude\\skills` (20 skills):
 unreal-cpp-gameplay, unreal-blueprints, unreal-behavior-trees,
@@ -174,16 +219,15 @@ Medición pendiente (requiere motor). Diseño para el objetivo:
 
 ## Resumen del benchmark al 2026-08-15
 
-**Cierre: ✅ APROBADO**
+**Cierre histórico: SUPERADO**
 
-**Status: compile gate + packaging gate PASSED contra Unreal Engine 5.8.**
+Este bloque queda como historial. El estado final real está más abajo en “Cierre técnico de maqueta 3D jugable (25/25)”.
 
-- **Compile Gate: ✅ PASÓ** — Unreal Engine 5.8, compilación sin errores.
-- **Packaging Gate: ✅ PASÓ** — exe generado, 24/25 tests PASS.
-- **Gameplay/AI/Vehicle/Mission: ✅ PASÓ** (benchmark ejecutado en exe real)
-- **Save/load: ⚠️ WARN** — GameInstanceClass usa C++ directo (cambio de BP a C++), funciona en build.
-- **Audio: ⚠️ WARN** — sin assets → silencio (limitación de content).
-- **Movimiento: ⚠️ WARN** — el benchmark de movimiento del jugador falla por detalle de colisión pos-test. El jugador puede moverse manualmente en el juego.
+- Compile Gate: ✅ PASÓ contra Unreal Engine 5.8.
+- Packaging Gate: ✅ PASÓ.
+- El antiguo 24/25 fue corregido posteriormente.
+- Save/load y movimiento ya pasan en el benchmark final.
+- Visual/content sigue pendiente como Asset/Render Gate.
 
 **Screenshots generados**: city_street.png, player_visible.png, npc_interaction_mei.png, mission_delivery_nova.png, vehicle_driving.png, wanted_police_chase.png, pause_menu.png (en `dist/Windows/.../Screenshots/Windows/`).
 
@@ -196,3 +240,51 @@ Medición pendiente (requiere motor). Diseño para el objetivo:
 1. **Opcional**: Asignar skeletal mesh humano al NPC en el editor para el gate visual.
 2. **Opcional**: Asignar assets de audio para el gate de audio completo.
 3. **Opcional**: Investigar por qué el benchmark de movimiento falla en posición de teletransporte (posible problema de colisión o timing en el build).
+
+---
+
+## 2026-08-15 — Cierre técnico de maqueta 3D jugable (25/25)
+
+### Gate: packaged benchmark — **PASS**
+
+Después de corregir config, targets, input fallback, spawn/teleport, geometría y escala de mallas, el ejecutable standalone carga el mapa correcto y pasa todos los gates automatizados.
+
+**Comando de validación:**
+
+```bash
+cd C:/Users/fjmn2/Dev/neon-district-sandbox
+rm -f dist/Windows/NeonDistrictSandbox.uproject
+rm -rf dist/Windows/NeonDistrictSandbox/Config
+rm -f dist/Windows/NeonDistrictSandbox/Saved/Logs/NeonDistrictSandbox.log \
+      dist/Windows/NeonDistrictSandbox/Saved/Benchmark/NDBenchmarkResult.txt
+cd dist/Windows
+./NeonDistrictSandbox.exe -game -benchmark -log -unattended -nosplash
+```
+
+**Evidencia:**
+
+```text
+Browse: /Game/Maps/ND_City?Name=Player
+LoadMap: /Game/Maps/ND_City?Name=Player
+Game class is 'NDGameMode'
+[NDBenchmark] Benchmark runner started in 'ND_City'
+=== RESULT: 25 passed, 0 failed ===
+```
+
+**Resultado completo:** `dist/Windows/NeonDistrictSandbox/Saved/Benchmark/NDBenchmarkResult.txt`.
+
+### Fixes finales relevantes
+
+- `DefaultEngine.ini`: sección correcta `[/Script/EngineSettings.GameMapsSettings]`; sin slash UE ignoraba `GameDefaultMap` y caía a `OpenWorld`.
+- Targets renombrados a `NeonDistrictSandbox.Target.cs` y `NeonDistrictSandboxEditor.Target.cs`; el módulo C++ sigue `NeonDistrict`.
+- `DefaultInput.ini`: mappings clásicos reales para fallback si Enhanced Input no inicializa en packaged build.
+- `NDGameMode::RestartPlayer`: recoloca al jugador en avenida real.
+- `NDBenchmarkRunner`: coloca el pawn sobre suelo con line trace y valida movimiento real.
+- `NDWorldBuilder::BuildStreet` y `BuildBlock`: corrige constantes de calles/bloques.
+- `NDWorldBuilder::AddBox`: corrige la causa raíz de escala — `/Engine/BasicShapes/Cube` mide 100uu por lado; los argumentos eran dimensiones en cm, no escala cruda. Ahora aplica `Scale / 100.0f`.
+
+### Gate visual/content — **WARN/PENDIENTE**
+
+Las capturas actuales ya no son azul sólido ni OpenWorld; muestran `ND_City` procedural. Aun así, la escena sigue siendo una maqueta/greybox: muchos cubos, materiales básicos, NPCs/vehículos placeholder y HUD poco demostrado en screenshots.
+
+**Decisión:** cerrar esta sesión como **maqueta 3D jugable 25/25**, no como juego visual final. Próxima sesión: Asset/Render Pass completo con `unreal-engine-2026`, `asset-pipeline-2026`, `game-assets` y skills especializadas del usuario.

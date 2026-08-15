@@ -21,6 +21,10 @@ public:
 
 	virtual void BeginPlay() override;
 
+	/** RestartPlayer: repositions the spawned pawn onto a real avenue (the
+	 *  default spawn at the origin sits inside the central building block). */
+	virtual void RestartPlayer(AController* NewPlayer) override;
+
 	/** HUD widget class (UMG). Assigned in editor via Content/UI assets or left null for code-created HUD. */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;

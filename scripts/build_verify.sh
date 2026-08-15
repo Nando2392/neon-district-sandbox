@@ -19,12 +19,13 @@ export UE_ROOT="/c/Program Files/Epic Games/UE_5.8"
 
 echo "Building project..."
 "$UE_ROOT/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun \
-    -project="/c/Users/fjmn2/Dev/neon-district-sandbox/NeonDistrict.uproject" \
+    -project="/c/Users/fjmn2/Dev/neon-district-sandbox/NeonDistrictSandbox.uproject" \
     -noP4 \
     -platform=Win64 \
     -clientconfig=Development \
     -cook \
-    -allmaps \
+    -map=/Game/Maps/ND_City \
+    -map=/Game/Maps/ND_MainMenu \
     -build \
     -stage \
     -archive \

@@ -52,6 +52,24 @@ ANDVehicle::ANDVehicle()
 
 	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
 	SetRootComponent(BodyMesh);
+	// Assign a visible engine-shape mesh with zero asset dependency.
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	{
+		BodyMesh->SetStaticMesh(Cube);
+		BodyMesh->SetRelativeScale3D(FVector(2.0f, 1.0f, 0.5f)); // car silhouette
+	}
+	// Tint the body with the engine neutral material + neon tint.
+	if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
+	{
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EngineMat, this);
+		if (MID)
+		{
+			MID->SetVectorParameterValue(TEXT("NeonColor"), FLinearColor(0.1f, 0.7f, 1.0f)); // cyan-teal
+			MID->SetScalarParameterValue(TEXT("EmissiveStrength"), 4.0f);
+			BodyMesh->SetMaterial(0, MID);
+		}
+	}
 	BodyMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BodyMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 
@@ -120,6 +138,9 @@ void ANDVehicle::EnterVehicle(APlayerController* PC)
 
 	bBeingDriven = true;
 
+	// Remember who was driving so ExitVehicle can put the player back on foot.
+	PreviousPawn = PC->GetPawn();
+
 	if (ANDPlayerController* NDPC = Cast<ANDPlayerController>(PC))
 	{
 		NDPC->SetDrivingState(this, true);
@@ -156,7 +177,16 @@ void ANDVehicle::ExitVehicle(APlayerController* PC)
 
 	if (ANDPlayerController* NDPC = Cast<ANDPlayerController>(PC))
 	{
-		NDPC->SetDrivingState(this, false); // restores + repossesses the character
+		NDPC->SetDrivingState(this, false); // clears driving state
+	}
+
+	// Re-possess the character that was driving. The player controller must end
+	// the interaction back on the playable pawn or movement/input stay dead.
+	if (PC && PreviousPawn)
+	{
+		PC->Possess(PreviousPawn);
+		PC->SetControlRotation(PreviousPawn->GetActorRotation());
+		PreviousPawn = nullptr;
 	}
 }
 

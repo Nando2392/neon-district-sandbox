@@ -1,73 +1,66 @@
 # Neon District Sandbox
 
-Vertical slice de **sandbox urbano third-person original** en Unreal Engine 5.
+Vertical slice de **sandbox urbano third-person original** en Unreal Engine 5.8.
 
----
+## Estado real — 2026-08-15
 
-## Estado REAL (actualizado: 2026-08-15)
-
-**BUILD: ✅ COMPILADO Y EMPAQUETADO CON ÉXITO**
+**✅ Maqueta 3D jugable empaquetada.**
+**✅ Benchmark automatizado en exe standalone: 25/25 PASS.**
+**⚠️ Visual/content todavía en fase greybox/placeholder.**
 
 | Gate | Estado | Evidencia |
-|---|---|---|
-| Unreal 5.8 instalado | ✅ | `C:\Program Files\Epic Games\UE_5.8` |
-| Compile editor/Development | ✅ | `Build.bat` → `Result: Succeeded` (16 fixes 5.6→5.8) |
-| Executable packageado | ✅ | `dist/Windows/NeonDistrictSandbox.exe` (17MB) |
-| Benchmark automatizado | ⚠️ **24/25 PASS** | 1 fail: `gameplay.player_move` (colisión teletransporte), 1 warn: audio |
-| Visual | ✅ | 14 screenshots generados |
-| Audio | ⚠️ WARN | Sin assets de contenido → silencio (placeholder) |
-
----
+|---|---:|---|
+| UE 5.8 instalado | ✅ | `C:\Program Files\Epic Games\UE_5.8` |
+| BuildCookRun | ✅ | `BUILD SUCCESSFUL`, ExitCode=0 |
+| Ejecutable Windows | ✅ | `dist/Windows/NeonDistrictSandbox.exe` |
+| Runtime map | ✅ | Log: `LoadMap: /Game/Maps/ND_City` |
+| GameMode | ✅ | Log: `Game class is 'NDGameMode'` |
+| Benchmark gameplay | ✅ | `=== RESULT: 25 passed, 0 failed ===` |
+| Screenshots | ✅ técnico | 7 PNG generados en `Saved/Screenshots/Windows/` |
+| Visual final | ⚠️ | Ciudad procedural visible, pero aún greybox/cubos/materiales básicos |
+| Asset pass | ❌ pendiente | Personajes, vehículos, props, UI y audio necesitan assets reales |
 
 ## Cómo ejecutar el juego
 
-### Opción 1: Ejecutable packageado (recomendado)
-
-1. Navegar a `dist/Windows/`
-2. Ejecutar `NeonDistrictSandbox.exe`
-3. Jugar directamente (sin instalar Unreal)
-
-### Opción 2: En Editor
-
-1. Abrir `NeonDistrictSandbox.uproject`
-2. Generar archivos de Visual Studio (botón derecho)
-3. Compilar con `Build.bat NeonDistrictEditor Win64 Development`
-4. Play → PIE
-
----
+1. Ir a:
+   ```text
+   C:\Users\fjmn2\Dev\neon-district-sandbox\dist\Windows
+   ```
+2. Ejecutar:
+   ```text
+   NeonDistrictSandbox.exe
+   ```
+3. No hace falta instalar ni abrir Unreal para jugar el build empaquetado.
 
 ## Controles
 
 | Entrada | Acción |
 |---|---|
-| WASD / flechas | Mover / acelerar-frenar y girar (vehículo) |
-| Ratón | Cámara third-person (pitch/yaw) |
-| Shift | Correr / sprint |
-| Espacio | Saltar (a pie) / freno de mano (vehículo) |
-| E | Interactuar (hablar, misión, pickup) |
+| WASD / flechas | Mover / acelerar-frenar y girar en vehículo |
+| Ratón | Cámara third-person |
+| Shift | Sprint |
+| Espacio | Saltar / freno de mano |
+| E | Interactuar |
 | F | Entrar / salir de vehículo |
 | ESC | Pausa / reanudar |
 | F5 | Guardar rápido |
 | F9 | Cargar rápido |
 
----
+## Sistemas implementados
 
-## Características
-
-- **Personaje third-person**: caminar/correr/sprint/saltar, cámara follow con collision avoidance
-- **Ciudad procedural** (`ANDWorldBuilder`): 2×2 manzanas, calles, edificios neón, farolas, señales
-- **NPCs humanos**: 12 civiles + 2 policías con AI de patrulla y persecución
-- **Vehículos Chaos**: 3 manejables, acelerar/frenar/girar, cámara de vehículo
-- **Wanted/heat 3 niveles**: persecución policial, sirena, refuerzos
-- **Misión corta**: "Entrega el paquete a Nova"
-- **UI procedural**: HUD, menú, pausa generados en código
-- **Save/Load**: posición, estado de misión, nivel de wanted
-
----
+- Personaje third-person con cámara.
+- Ciudad procedural `ANDWorldBuilder` en `ND_City`.
+- NPCs civiles y policías.
+- Misión corta: “Entrega a Nova”.
+- Wanted/heat con policía.
+- Vehículos manejables.
+- Pausa.
+- Save/load.
+- Benchmark runner empaquetado con reporte y screenshots.
 
 ## Arquitectura
 
-```
+```text
 Source/NeonDistrict/
 ├── Core/        NDGameInstance, NDGameMode, NDSaveGame, NDPerfConstants
 ├── Player/      NDPlayerController, NDCharacter, NDInteractable
@@ -79,51 +72,44 @@ Source/NeonDistrict/
 └── UI/          NDHUDWidget, NDPauseWidget, NDMainMenuWidget
 ```
 
----
+Descriptor: `NeonDistrictSandbox.uproject`
+Módulo C++: `NeonDistrict`
+Targets: `NeonDistrictSandbox.Target.cs`, `NeonDistrictSandboxEditor.Target.cs`
 
-## Build / Packaging
+## Benchmark final
 
-**Paquete generado:**
-```
-dist/Windows/
-├── NeonDistrictSandbox.exe          (17MB stub)
-├── Engine/                           (runtime engine)
-└── NeonDistrictSandbox/
-    ├── Binaries/
-    ├── Content/Paks/                 (11MB de contenido)
-    └── Saved/
-        ├── Screenshots/
-        ├── Logs/
-        └── Benchmark/
+Resultado guardado en:
+
+```text
+dist/Windows/NeonDistrictSandbox/Saved/Benchmark/NDBenchmarkResult.txt
 ```
 
-Ver `docs/scorecard.md` para estado detallado del benchmark.
+Resumen:
 
----
+```text
+Map: /Game/Maps/ND_City
+[PASS] mission.accept
+[PASS] mission.complete
+[PASS] wanted.level2
+[PASS] vehicle.enter
+[PASS] vehicle.drive_input
+[PASS] vehicle.exit
+[PASS] controls.pause
+[PASS] save.write
+[PASS] save.load
+[PASS] gameplay.player_move — moved 50.4 cm
+=== RESULT: 25 passed, 0 failed ===
+```
 
-## Benchmark Status
+## Próximo hito
 
-**Resultados:** 24/25 tests PASS
+**Asset/Render Pass.** La maqueta ya existe y funciona; ahora hay que renderizarla como juego:
 
-- ✅ Todos los gates de gameplay, IA, vehículos, misión pasan
-- ⚠️ `gameplay.player_move`: falla en colisión de teletransporte (benchmark específico)
-- ⚠️ Audio: sin assets de contenido → silencio (placeholder conocido)
+- Materiales runtime coloreados/emisivos.
+- Meshes/props urbanos.
+- Humanos reconocibles.
+- Vehículos reconocibles.
+- HUD legible y capturas que muestren el estado real.
+- Audio assets o synth verificable.
 
-**NOTA:** El jugador puede moverse manualmente en el juego. El fallo es específico del entorno de test del benchmark.
-
----
-
-## Build History
-
-- **Compilado:** 2026-08-15 contra UE 5.8
-- **Fixes migración 5.6→5.8:** 16 fixes documentados en `docs/process.md`
-- **Packaging:** Win64 Development, sin perfiles de licencia
-
----
-
-## Documentación
-
-- `docs/process.md` — Detalles del build y migración 5.6→5.8
-- `docs/scorecard.md` — Estado completo de todos los gates
-- `docs/packaging.md` — Procedimiento de packaging
-- `smoke_check.py` — Verificación automatizada del proyecto
+Ver `docs/scorecard.md`, `docs/packaging.md` y la wiki Obsidian del proyecto para el prompt de continuación.

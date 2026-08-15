@@ -19,49 +19,14 @@ ANDCitySpawner::ANDCitySpawner()
 	PrimaryActorTick.bCanEverTick = false;
 
 	// --- Default classes for zero-asset spawning ---
-	// Civilian: basic character with procedural mesh.
-	static ConstructorHelpers::FClassFinder<ANDNPCCharacter> CivilianBP(TEXT("/Script/Engine.Class'/Game/Blueprints/BP_Civilian.BP_Civilian_C'"));
-	if (!CivilianBP.Succeeded())
-	{
-		CivilianClass = ANDNPCCharacter::StaticClass();
-	}
-	else
-	{
-		CivilianClass = CivilianBP.Class;
-	}
-
-	// Police: same character class with police flag.
-	static ConstructorHelpers::FClassFinder<ANDNPCCharacter> PoliceBP(TEXT("/Script/Engine.Class'/Game/Blueprints/BP_Police.BP_Police_C'"));
-	if (!PoliceBP.Succeeded())
-	{
-		PoliceClass = ANDNPCCharacter::StaticClass();
-	}
-	else
-	{
-		PoliceClass = PoliceBP.Class;
-	}
-
-	// Vehicle: drivable car.
-	static ConstructorHelpers::FClassFinder<ANDVehicle> VehicleBP(TEXT("/Script/Engine.Class'/Game/Blueprints/BP_CityCar.BP_CityCar_C'"));
-	if (!VehicleBP.Succeeded())
-	{
-		VehicleClass = ANDVehicle::StaticClass();
-	}
-	else
-	{
-		VehicleClass = VehicleBP.Class;
-	}
-
-	// Traffic vehicle: autonomous.
-	static ConstructorHelpers::FClassFinder<ANDTrafficVehicle> TrafficBP(TEXT("/Script/Engine.Class'/Game/Blueprints/BP_TrafficCar.BP_TrafficCar_C'"));
-	if (!TrafficBP.Succeeded())
-	{
-		TrafficClass = ANDTrafficVehicle::StaticClass();
-	}
-	else
-	{
-		TrafficClass = TrafficBP.Class;
-	}
+	// All classes resolve to their native C++ implementations directly. Blueprints
+	// remain overridable via the UPROPERTY(EditAnywhere) fields in the header.
+	// No FClassFinder/ConstructorHelpers here — avoids cooking warnings from
+	// referencing non-existent BP assets in Content/Blueprints.
+	CivilianClass = ANDNPCCharacter::StaticClass();
+	PoliceClass = ANDNPCCharacter::StaticClass();
+	VehicleClass = ANDVehicle::StaticClass();
+	TrafficClass = ANDTrafficVehicle::StaticClass();
 
 	// Mission NPCs: Mei (giver), Package holder (meetup), Nova (delivery).
 	// Using the same NPC class; different roles handled at spawn time.
@@ -220,7 +185,7 @@ void ANDCitySpawner::SpawnTraffic()
 
 void ANDCitySpawner::SpawnMissionNPCs()
 {
-	// Roles: index 0 = Mei (MissionGiver), index 1 = Package, index 2 = Nova (Delivery)
+	// Roles: index 0 = Mei (MissionGiver), index 1 = Package holder, index 2 = Nova (Delivery)
 	static constexpr ENPCMissionRole MissionRoles[] = {
 		ENPCMissionRole::MissionGiver,
 		ENPCMissionRole::Package,

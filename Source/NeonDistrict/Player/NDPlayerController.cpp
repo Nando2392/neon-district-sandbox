@@ -4,6 +4,10 @@
 #include "Player/NDCharacter.h"
 #include "Vehicle/NDVehicle.h"
 #include "UI/NDHUDWidget.h"
+#include "UI/NDPauseWidget.h"
+#include "UI/NDMainMenuWidget.h"
+#include "Core/NDGameInstance.h"
+#include "Core/NDSaveGame.h"
 #include "Blueprint/UserWidget.h"
 
 #include "EnhancedInputComponent.h"
@@ -14,7 +18,9 @@
 #include "Engine/World.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/Character.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Player/NDInteractable.h"
 
 ANDPlayerController::ANDPlayerController()
 {
@@ -35,11 +41,28 @@ void ANDPlayerController::BeginPlay()
 	// Main menu check - not active in benchmark
 	if (LevelName == TEXT("ND_MainMenu"))
 	{
+		// Show the procedural main menu (Play / Continue / Quit).
+		if (UNDMainMenuWidget* Menu = CreateWidget<UNDMainMenuWidget>(this, UNDMainMenuWidget::StaticClass()))
+		{
+			Menu->AddToViewport(10);
+			SetInputMode(FInputModeUIOnly());
+			bShowMouseCursor = true;
+		}
 		return;
 	}
 
 	// Gameplay level: setup input
 	SetupGameplayInput();
+
+	// Create the HUD (objective, wanted, prompt, notifications).
+	if (!HUDWidget)
+	{
+		if (UNDHUDWidget* HUD = CreateWidget<UNDHUDWidget>(this, UNDHUDWidget::StaticClass()))
+		{
+			HUD->AddToViewport(5);
+			HUDWidget = HUD;
+		}
+	}
 }
 
 void ANDPlayerController::SetupGameplayInput()
@@ -171,6 +194,9 @@ void ANDPlayerController::SetupFallbackInput()
 	InputComponent->BindAction("Sprint", IE_Released, this, &ANDPlayerController::HandleSprintStop);
 	InputComponent->BindAction("Interact", IE_Pressed, this, &ANDPlayerController::HandleInteract);
 	InputComponent->BindAction("EnterVehicle", IE_Pressed, this, &ANDPlayerController::HandleEnterExitVehicle);
+	InputComponent->BindAction("Pause", IE_Pressed, this, &ANDPlayerController::HandlePause);
+	InputComponent->BindAction("QuickSave", IE_Pressed, this, &ANDPlayerController::HandleQuickSave);
+	InputComponent->BindAction("QuickLoad", IE_Pressed, this, &ANDPlayerController::HandleQuickLoad);
 }
 
 void ANDPlayerController::Tick(float DeltaSeconds)
@@ -310,27 +336,201 @@ void ANDPlayerController::HandleSprintStop()
 
 void ANDPlayerController::HandleInteract()
 {
-	// Simplified - no actual interaction for benchmark
+	// Interact with the current target (NPC mission giver, package, delivery,
+	// vehicle seat, pickup). The target exposes INDIInteractable.
+	if (CurrentInteractable)
+	{
+		if (INDIInteractable* Interactable = Cast<INDIInteractable>(CurrentInteractable))
+		{
+			Interactable->Execute_Interact(CurrentInteractable, this);
+		}
+	}
 }
 
 void ANDPlayerController::HandleEnterExitVehicle()
 {
-	// Simplified - no vehicle enter/exit for benchmark
+	// Enter the nearest drivable vehicle when on foot; exit when driving.
+	if (bIsDriving && DrivenVehicle)
+	{
+		DrivenVehicle->ExitVehicle(this);
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		TArray<AActor*> Vehicles;
+		UGameplayStatics::GetAllActorsOfClass(World, ANDVehicle::StaticClass(), Vehicles);
+
+		APawn* MyPawn = GetPawn();
+		const FVector PlayerLoc = MyPawn ? MyPawn->GetActorLocation() : FVector::ZeroVector;
+
+		ANDVehicle* Nearest = nullptr;
+		float NearestDist = 420.0f; // interact radius
+		for (AActor* V : Vehicles)
+		{
+			if (!V)
+			{
+				continue;
+			}
+			const float Dist = FVector::Dist2D(PlayerLoc, V->GetActorLocation());
+			if (Dist < NearestDist)
+			{
+				NearestDist = Dist;
+				Nearest = Cast<ANDVehicle>(V);
+			}
+		}
+
+		if (Nearest)
+		{
+			Nearest->EnterVehicle(this);
+		}
+	}
 }
 
 void ANDPlayerController::HandleQuickSave()
 {
-	// Simplified - no save for benchmark
+	// Quick save (F5): snapshot the player into the persistent slot via the
+	// project GameInstance (UNDGameInstance). The save is written with
+	// SaveGameToSlot so it survives restarts.
+	if (UNDGameInstance* GI = GetGameInstance<UNDGameInstance>())
+	{
+		const bool bSaved = GI->SaveGame();
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, bSaved ? FColor::Green : FColor::Red,
+				bSaved ? TEXT("Partida guardada (F5)") : TEXT("Error al guardar"));
+		}
+	}
+	else if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("No GameInstance para guardar"));
+	}
 }
 
 void ANDPlayerController::HandleQuickLoad()
 {
-	// Simplified - no load for benchmark
+	// Quick load (F9): restore the snapshot (position + mission/wanted state
+	// lives in GameInstance subsystems, so a fresh snapshot is enough).
+	if (UNDGameInstance* GI = GetGameInstance<UNDGameInstance>())
+	{
+		const bool bLoaded = GI->LoadGame();
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, bLoaded ? FColor::Green : FColor::Yellow,
+				bLoaded ? TEXT("Partida cargada (F9)") : TEXT("No hay partida guardada"));
+		}
+
+		// Teleport the possessed pawn to the saved location.
+		if (bLoaded)
+		{
+			if (UNDSaveGame* Save = GI->GetMutableSave())
+			{
+				if (APawn* MyPawn = GetPawn())
+				{
+					MyPawn->SetActorLocation(Save->PlayerLocation + FVector(0.0f, 0.0f, 80.0f));
+					MyPawn->SetActorRotation(FRotator(0.0f, Save->PlayerYaw, 0.0f));
+					SetControlRotation(FRotator(0.0f, Save->PlayerYaw, 0.0f));
+				}
+			}
+		}
+	}
+	else if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("No GameInstance para cargar"));
+	}
 }
 
 void ANDPlayerController::UpdateInteractionTarget()
 {
-	CurrentInteractable = nullptr;
+	// Find the interactable under the camera crosshair: line trace from the
+	// camera forward, biased a bit toward the player so the player can also
+	// interact by looking slightly down at a target near their feet.
+	if (bIsDriving)
+	{
+		CurrentInteractable = nullptr;
+		if (HUDWidget)
+		{
+			HUDWidget->SetInteractionPrompt(FText::GetEmpty());
+		}
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	APlayerCameraManager* CamMgr = PlayerCameraManager;
+	if (!World || !CamMgr || !PlayerCharacter)
+	{
+		CurrentInteractable = nullptr;
+		return;
+	}
+
+	AActor* Best = nullptr;
+	float BestScore = TNumericLimits<float>::Max();
+
+	// Direct camera trace.
+	{
+		const FVector Start = CamMgr->GetCameraLocation();
+		const FVector End = Start + CamMgr->GetCameraRotation().Vector() * 600.0f;
+		FHitResult Hit;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+		Params.AddIgnoredActor(GetPawn());
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+		{
+			if (AActor* HitActor = Hit.GetActor())
+			{
+				if (HitActor->Implements<UNDIInteractable>())
+				{
+					Best = HitActor;
+					BestScore = Hit.Distance;
+				}
+			}
+		}
+	}
+
+	// Proximity fallback for NPCs/vehicles in a short radius around the player.
+	{
+		const FVector PlayerLoc = GetPawn() ? GetPawn()->GetActorLocation() : FVector::ZeroVector;
+		const FVector PlayerFwd = GetControlRotation().Vector();
+		TArray<AActor*> Candidates;
+		UGameplayStatics::GetAllActorsWithInterface(World, UNDIInteractable::StaticClass(), Candidates);
+		for (AActor* A : Candidates)
+		{
+			if (!A || A == Best)
+			{
+				continue;
+			}
+			const FVector ToTarget = (A->GetActorLocation() - PlayerLoc);
+			const float Dist = ToTarget.Size2D();
+			if (Dist > 320.0f)
+			{
+				continue;
+			}
+			// Favor targets in front of the player.
+			const float Dot = FVector::DotProduct(ToTarget.GetSafeNormal2D(), PlayerFwd.GetSafeNormal2D());
+			const float Score = Dist - Dot * 200.0f;
+			if (Score < BestScore)
+			{
+				BestScore = Score;
+				Best = A;
+			}
+		}
+	}
+
+	CurrentInteractable = Best;
+
+	// Update the HUD prompt.
+	if (HUDWidget)
+	{
+		FText Prompt = FText::GetEmpty();
+		if (Best)
+		{
+			if (INDIInteractable* Interactable = Cast<INDIInteractable>(Best))
+			{
+				Prompt = INDIInteractable::Execute_GetInteractionPrompt(Best);
+			}
+		}
+		HUDWidget->SetInteractionPrompt(Prompt);
+	}
 }
 
 void ANDPlayerController::SetDrivingState(ANDVehicle* Vehicle, bool bEntering)
@@ -388,6 +588,14 @@ void ANDPlayerController::HandlePause()
 	else
 	{
 		UGameplayStatics::SetGamePaused(World, true);
+		if (!PauseWidget)
+		{
+			if (UNDPauseWidget* Pause = CreateWidget<UNDPauseWidget>(this, UNDPauseWidget::StaticClass()))
+			{
+				Pause->AddToViewport(20);
+				PauseWidget = Pause;
+			}
+		}
 		SetInputMode(FInputModeGameAndUI());
 		bShowMouseCursor = true;
 	}

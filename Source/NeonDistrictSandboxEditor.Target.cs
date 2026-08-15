@@ -3,9 +3,9 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class NeonDistrictEditorTarget : TargetRules
+public class NeonDistrictSandboxEditorTarget : TargetRules
 {
-	public NeonDistrictEditorTarget(TargetInfo Target) : base(Target)
+	public NeonDistrictSandboxEditorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;

@@ -72,16 +72,16 @@ void ANDWorldBuilder::Tick(float DeltaSeconds)
 
 UMaterial* ANDWorldBuilder::CreateNeonMaterial()
 {
-	// IMPORTANT: WITH_EDITOR is true for the UnrealEditor binary even when
-	// launched with `-game` (standalone), but the MaterialEditor module is not
-	// loaded in game mode, so UMaterialEditingLibrary calls crash. Gate on the
-	// runtime mode: FApp::IsGame() is true for standalone `-game`; PIE in the
-	// editor keeps the full editor path.
+	// NeonMat: BaseColor <- NeonColor; Emissive <- NeonColor * EmissiveStrength.
+	// Expression wiring + property connects are editor-only in UE 5.8
+	// (UMaterialEditingLibrary; BaseColor/EmissiveColor/ShadingModel are
+	// private outside the editor), so the procedural graph only exists in
+	// PIE. Packaged builds use the engine's basic shape material, which is
+	// lit by the district's colored lights + fog + bloom — not a flat gray
+	// void, but not emissive. MIDs set NeonColor/EmissiveStrength as no-ops.
 #if WITH_EDITOR
 	if (!FApp::IsGame())
 	{
-		// NeonMat: BaseColor <- NeonColor; Emissive <- NeonColor * EmissiveStrength
-		// (Material pin wiring is editor-only via UMaterialEditingLibrary in UE 5.8.)
 		UMaterial* Mat = NewObject<UMaterial>(this, UMaterial::StaticClass(), TEXT("ND_NeonMat"));
 		Mat->SetFlags(RF_Transient);
 
@@ -111,9 +111,8 @@ UMaterial* ANDWorldBuilder::CreateNeonMaterial()
 		return Mat;
 	}
 #endif
-	// Standalone game (-game) / packaged build: no procedural material graph
-	// available; fall back to the engine's basic shape material. Parameters are
-	// no-ops, so buildings render neutral gray — documented limitation, not hidden.
+	// Packaged build / standalone -game: no editor material graph. Use the
+	// engine basic shape material (lit by the district's neon lights).
 	return LoadObject<UMaterial>(nullptr,
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 }
@@ -137,7 +136,12 @@ UStaticMeshComponent* ANDWorldBuilder::AddBox(FVector Location, FVector Scale, c
 	Comp->SetupAttachment(SceneRoot);
 	Comp->RegisterComponent();
 	Comp->SetRelativeLocation(Location);
-	Comp->SetRelativeScale3D(Scale);
+	// /Engine/BasicShapes/Cube is 100uu per side. Callers pass dimensions in
+	// centimeters (street width, block size, building height), not raw Unreal
+	// scale multipliers. Applying those values directly made every slab 100x too
+	// large, so street placement traces hit skyscraper/sidewalk collision at the
+	// trace start instead of the asphalt below.
+	Comp->SetRelativeScale3D(Scale / 100.0f);
 	if (!RelativeRotation.IsZero())
 	{
 		Comp->SetRelativeRotation(FRotator(RelativeRotation.X, RelativeRotation.Y, RelativeRotation.Z));
@@ -219,13 +223,13 @@ void ANDWorldBuilder::BuildStreet(FVector Center, bool bIsVertical)
 
 	if (bIsVertical)
 	{
-		AddBox(Center + FVector(0, 0, -4), FVector(30.0f, StreetLen, 8.0f), Asphalt, 0.0f);
+		AddBox(Center + FVector(0, 0, -4), FVector(StreetWide, StreetLen, 8.0f), Asphalt, 0.0f);
 		// Center lane marking (dashed look via thin emissive strip).
 		AddBox(Center + FVector(0, 0, -1), FVector(16.0f, StreetLen, 2.0f), LaneLine, 2.5f);
 	}
 	else
 	{
-		AddBox(Center + FVector(0, 0, -4), FVector(StreetLen, 30.0f, 8.0f), Asphalt, 0.0f);
+		AddBox(Center + FVector(0, 0, -4), FVector(StreetLen, StreetWide, 8.0f), Asphalt, 0.0f);
 		AddBox(Center + FVector(0, 0, -1), FVector(StreetLen, 16.0f, 2.0f), LaneLine, 2.5f);
 	}
 }
@@ -237,8 +241,8 @@ void ANDWorldBuilder::BuildBlock(int32 BX, int32 BY)
 	const float BlockPitch = BlockSize + 2.0f * StreetHalfWidth;
 
 	const FVector BlockOrigin(
-		-TotalW * 0.5f + StreetHalfWidth + BX * BlockPitch,
-		-TotalH * 0.5f + StreetHalfWidth + BY * BlockPitch,
+		-TotalW * 0.5f + 2.0f * StreetHalfWidth + BX * BlockPitch,
+		-TotalH * 0.5f + 2.0f * StreetHalfWidth + BY * BlockPitch,
 		0.0f);
 
 	// Sidewalk slab around the block.

@@ -9,10 +9,49 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 ANDCharacter::ANDCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// --- Player visual proxy (zero asset dependency) ---
+	// ACharacter ships an empty SkeletalMesh; hide it and attach a Cube-based
+	// body mesh so the player is always visible even before any ABP/import.
+	USkeletalMeshComponent* Skel = GetMesh();
+	if (Skel)
+	{
+		Skel->SetVisibility(false);
+		Skel->SetGenerateOverlapEvents(false);
+	}
+
+	PlayerBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlayerBody"));
+	PlayerBody->SetupAttachment(GetRootComponent());
+	PlayerBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PlayerBody->bCastDynamicShadow = false;
+	PlayerBody->SetRelativeLocation(FVector(0, 0, -88.0f)); // align with capsule standing height
+	PlayerBody->SetRelativeScale3D(FVector(0.45f, 0.45f, 1.7f)); // ~slim humanoid
+
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	{
+		PlayerBody->SetStaticMesh(Cube);
+		// Neon-accented material tint.
+		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(
+			nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
+		{
+			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EngineMat, this);
+			if (MID)
+			{
+				MID->SetVectorParameterValue(TEXT("NeonColor"), FLinearColor(0.9f, 0.3f, 1.0f)); // violet-pink
+				MID->SetScalarParameterValue(TEXT("EmissiveStrength"), 2.0f);
+				PlayerBody->SetMaterial(0, MID);
+			}
+		}
+	}
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());

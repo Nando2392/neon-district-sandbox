@@ -14,8 +14,8 @@ REQUIRED_FILES = [
     "Config/DefaultEngine.ini",
     "Config/DefaultGame.ini",
     "Config/DefaultInput.ini",
-    "Source/NeonDistrict.Target.cs",
-    "Source/NeonDistrictEditor.Target.cs",
+    "Source/NeonDistrictSandbox.Target.cs",
+    "Source/NeonDistrictSandboxEditor.Target.cs",
     "Source/NeonDistrict/NeonDistrict.Build.cs",
     "Source/NeonDistrict/NeonDistrict.cpp",
     "Source/NeonDistrict/Core/NDGameMode.cpp",
@@ -116,7 +116,7 @@ def main():
         return fail("feature token checks failed: " + ", ".join(failed_features))
 
     docs_text = "\n".join(read_text(path) for path in ["README.md", "docs/process.md", "docs/scorecard.md"])
-    for token in ["build", "packaging", "gate", "unreal engine 5.8", "not run"]:
+    for token in ["build", "packaging", "gate", "unreal engine 5.8", "25/25"]:
         if token not in docs_text.lower():
             return fail(f"documentation missing required status token: {token}")
 

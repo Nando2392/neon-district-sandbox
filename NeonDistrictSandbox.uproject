@@ -7,7 +7,7 @@
 		{
 			"Name": "NeonDistrict",
 			"Type": "Runtime",
-			"LoadingPhase": "PostConfigInit",
+			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
 				"CoreUObject"

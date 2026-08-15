@@ -23,6 +23,21 @@ int32 UNDCreateMapsCommandlet::Main(const FString& Params)
 			continue;
 		}
 
+		// NewBlankMap clones the engine template map, so the world's package
+		// still carries the template name (/Engine/Maps/Templates/Template_Default).
+		// Rename package + world to the unique target name BEFORE saving, or the
+		// AssetManager registers every map under the same PrimaryAssetID and the
+		// cooker silently drops them (duplicate PrimaryAssetID warning, zero
+		// cooked .umap, game boots into OpenWorld instead of our map).
+		UPackage* WorldPackage = World->GetOutermost();
+		if (WorldPackage && WorldPackage->GetName() != PackagePath)
+		{
+			const EObjectFlags RenameFlags = static_cast<EObjectFlags>(REN_DontCreateRedirectors | REN_NonTransactional);
+			WorldPackage->Rename(*PackagePath, nullptr, RenameFlags);
+			World->Rename(*MapName, WorldPackage, RenameFlags);
+			UE_LOG(LogTemp, Display, TEXT("NDCreateMaps: renamed world package to %s"), *PackagePath);
+		}
+
 		if (!UEditorLoadingAndSavingUtils::SaveMap(World, PackagePath))
 		{
 			UE_LOG(LogTemp, Error, TEXT("NDCreateMaps: SaveMap failed for %s"), *MapName);

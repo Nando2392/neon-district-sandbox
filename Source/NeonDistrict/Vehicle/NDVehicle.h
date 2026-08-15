@@ -74,6 +74,10 @@ protected:
 	/** Set true when the vehicle is being driven (skips idle physics sleep logic). */
 	bool bBeingDriven = false;
 
+	/** Pawn (the player character) that was driving; re-possessed on exit. */
+	UPROPERTY()
+	TObjectPtr<APawn> PreviousPawn = nullptr;
+
 private:
 	void EnsureWheels();
 	float LastImpactTime = -10.0f;
