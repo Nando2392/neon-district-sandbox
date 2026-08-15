@@ -1,8 +1,7 @@
 # Scorecard — Neon District Sandbox
 
 Criterios del benchmark con estado PASS/FAIL/NOT RUN y evidencia. Estado a
-2026-08-15 (actualizado 2026-06-16 13:45Z): **Compile PASS + exe empaquetado
-ejecutable con 19/21 tests automatizados PASS.**
+2026-08-15 (actualizado): **24/25 tests automatizados PASS en exe empaquetado.**
 
 Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor/editor) · 🔶 PARCIAL
 

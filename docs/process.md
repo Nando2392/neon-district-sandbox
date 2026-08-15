@@ -201,7 +201,9 @@ Medición pendiente (requiere motor). Diseño para el objetivo:
 
 **Cierre: ✅ APROBADO**
 
-- **Compile Gate: ✅ PASÓ** — UE 5.8, compilación sin errores.
+**Status: editor compile gate PASSED against Unreal Engine 5.8.**
+
+- **Compile Gate: ✅ PASÓ** — Unreal Engine 5.8, compilación sin errores.
 - **Packaging Gate: ✅ PASÓ** — exe generado, 22/23 tests PASS.
 - **Save/Load en build: ⚠️ WARN** — GameInstanceClass no se cocina (bug UE5).
   Workaround: usar PIE en editor o Blueprint derivado (`docs/packaging/gameinstance-cook-fix.md`).
