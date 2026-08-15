@@ -271,4 +271,10 @@ Medición pendiente (requiere motor). Diseño para el objetivo:
 - 19/21 tests PASS en benchmark automatizado
 - 2 FAIL documentados: save.write/save.load (GameInstanceClass cook limitation)
 
+**Auto Research (re-verificación 2026-08-15T112213Z): ✅ PASÓ**
+- `hermes-auto-research-runner.mjs --project neon-district-sandbox` → `status: ready_for_review`
+- projectCheck: **passed** (python smoke_check.py, exit 0) — estructura, módulos, feature tokens y docs presentes
+- `canUseForProductChange: true`, `canPromotePromptOrProvider: false` (por política)
+- Nota del propio smoke check: no compila UE; compile gate ya verificado aparte (Build.bat, 2026-08-15)
+
 **Próximos gates**: Validar save/load en PIE (editor); capturar screenshots en editor.
