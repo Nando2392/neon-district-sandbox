@@ -9,11 +9,13 @@
 class USoundBase;
 class UAudioComponent;
 class UNDSaveGame;
+class UNDSynthAudioComponent;
 
 /**
  * Audio manager (owned by the GameInstance). Bus layout by category with
- * per-category volume multipliers; assets are optional soft paths configured in
- * the editor — with zero assets the game stays silent but never crashes.
+ * per-category volume multipliers. Two sources:
+ *  - procedural synth (zero assets): ambience pad, engine, siren, UI blips;
+ *  - optional editor soft-path assets layered on top when configured.
  * Wanted intensity drives ambience/music layering + siren.
  */
 UCLASS()
@@ -24,6 +26,9 @@ class NEONDISTRICT_API UNDAudioManager : public UObject
 public:
 	void InitializeFromSave(UNDSaveGame* Save);
 	void ApplyVolumes();
+
+	/** Called by the level audio anchor once its procedural synth is ready. */
+	void RegisterSynth(UNDSynthAudioComponent* Synth);
 
 	/** Called by the player controller on wanted level changes. */
 	void SetWantedLevel(int32 Level);
@@ -81,6 +86,9 @@ public:
 private:
 	void PlayOneShot(const TSoftObjectPtr<USoundBase>& Sound, AActor* Context, float CategoryVolume, float PitchJitter = 0.0f);
 	void UpdateSiren(AActor* Context);
+
+	UPROPERTY()
+	TObjectPtr<UNDSynthAudioComponent> Synth = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> EngineComponent = nullptr;

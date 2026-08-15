@@ -47,6 +47,9 @@ public:
 	/** Resume from the pause widget (also bound to Escape in-game). */
 	void HandlePauseFromWidget();
 
+	/** Toggle pause + pause widget (Escape). Public so the benchmark runner can exercise it. */
+	void HandlePause();
+
 private:
 	// --- Enhanced Input (created at runtime so the repo needs zero input assets) ---
 	void CreateInputActions();
@@ -58,7 +61,6 @@ private:
 	void HandleSprintStop();
 	void HandleInteract();
 	void HandleEnterExitVehicle();
-	void HandlePause();
 	void HandleQuickSave();
 	void HandleQuickLoad();
 

@@ -71,6 +71,16 @@ private:
 	void BuildAtmosphere();
 	void SpawnCityPopulation();
 
+public:
+	/**
+	 * Deterministic street point for spawning/benchmarks. The district grid is
+	 * fully procedural, so the navmesh (baked into .umap levels) does not exist
+	 * here; callers that need a reachable point must not depend on it. Returns a
+	 * location on an avenue surface (Z=0 = asphalt top), away from block facades.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "District")
+	FVector GetRandomStreetPoint() const;
+
 	// Materials
 	UMaterial* CreateNeonMaterial();
 	UMaterialInstanceDynamic* MakeMID(UMaterial* Base, const FLinearColor& Color, float EmissiveStrength);

@@ -7,6 +7,7 @@
 #include "Vehicle/NDTrafficVehicle.h"
 #include "Core/NDPerfConstants.h"
 #include "Systems/NDMissionSystem.h"
+#include "Systems/NDWorldBuilder.h"
 
 #include "NavigationSystem.h"
 #include "Components/SplineComponent.h"
@@ -94,6 +95,22 @@ FVector ANDCitySpawner::PickNavSpawnPoint(float Radius) const
 	if (NavSys && NavSys->GetRandomReachablePointInRadius(GetActorLocation(), Radius, NavLocation))
 	{
 		Location = NavLocation;
+	}
+	else
+	{
+		// The district is fully procedural (no baked navmesh), so navmesh
+		// queries fall back to the origin and everything would stack there.
+		// Fall back to a real avenue point from the world builder instead —
+		// the same street grid the player walks on.
+		TArray<AActor*> Builders;
+		UGameplayStatics::GetAllActorsOfClass(this, ANDWorldBuilder::StaticClass(), Builders);
+		if (Builders.Num() > 0)
+		{
+			if (ANDWorldBuilder* Builder = Cast<ANDWorldBuilder>(Builders[0]))
+			{
+				Location = Builder->GetRandomStreetPoint();
+			}
+		}
 	}
 	return Location;
 }

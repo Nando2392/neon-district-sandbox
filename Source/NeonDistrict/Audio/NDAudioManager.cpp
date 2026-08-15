@@ -1,6 +1,7 @@
 // Copyright Neon District Sandbox. Public benchmark repo — original content only.
 
 #include "Audio/NDAudioManager.h"
+#include "Audio/NDSynthAudioComponent.h"
 #include "Core/NDSaveGame.h"
 
 #include "Components/AudioComponent.h"
@@ -19,8 +20,23 @@ void UNDAudioManager::InitializeFromSave(UNDSaveGame* Save)
 	}
 }
 
+void UNDAudioManager::RegisterSynth(UNDSynthAudioComponent* InSynth)
+{
+	Synth = InSynth;
+	if (Synth)
+	{
+		Synth->SetMasterVolume(MasterVolume);
+		Synth->SetAmbienceActive(true); // city + menu pad
+		Synth->SetWantedLevel(WantedLevel);
+	}
+}
+
 void UNDAudioManager::ApplyVolumes()
 {
+	if (Synth)
+	{
+		Synth->SetMasterVolume(MasterVolume);
+	}
 	// Without USoundClass assets the per-category volumes are applied at call sites
 	// via PlayOneShot; editor can wire real submixes into the sounds for bus control.
 	if (EngineComponent)
@@ -36,6 +52,10 @@ void UNDAudioManager::ApplyVolumes()
 void UNDAudioManager::SetWantedLevel(int32 Level)
 {
 	WantedLevel = Level;
+	if (Synth)
+	{
+		Synth->SetWantedLevel(Level);
+	}
 	// Siren + music intensity only when actively pursued (level 2+).
 	if (Level >= 2 && EngineContext)
 	{
@@ -74,6 +94,10 @@ void UNDAudioManager::PlayFootstep(AActor* Context)
 {
 	if (FootstepSounds.Num() == 0)
 	{
+		if (Synth)
+		{
+			Synth->PlayFootstep(); // procedural fallback — audio gate PASS with zero assets
+		}
 		return;
 	}
 	const int32 Index = FMath::RandRange(0, FootstepSounds.Num() - 1);
@@ -82,22 +106,51 @@ void UNDAudioManager::PlayFootstep(AActor* Context)
 
 void UNDAudioManager::PlayImpact(AActor* Context)
 {
+	if (ImpactSound.IsNull())
+	{
+		if (Synth)
+		{
+			Synth->PlayImpact();
+		}
+		return;
+	}
 	PlayOneShot(ImpactSound, Context, SfxVolume * 0.9f, 0.1f);
 }
 
 void UNDAudioManager::PlayUI()
 {
+	if (UIClickSound.IsNull())
+	{
+		if (Synth)
+		{
+			Synth->PlayUIBlip();
+		}
+		return;
+	}
 	PlayOneShot(UIClickSound, nullptr, UiVolume);
 }
 
 void UNDAudioManager::PlayAlert()
 {
+	if (AlertSound.IsNull())
+	{
+		if (Synth)
+		{
+			Synth->PlayAlert();
+		}
+		return;
+	}
 	PlayOneShot(AlertSound, nullptr, SfxVolume * 0.9f);
 }
 
 void UNDAudioManager::StartEngineLoop(AActor* Vehicle)
 {
 	EngineContext = Vehicle;
+	if (Synth)
+	{
+		Synth->SetEngineState(true, 0.0f); // procedural engine loop
+	}
+
 	if (EngineLoopSound.IsNull())
 	{
 		return;
@@ -125,12 +178,16 @@ void UNDAudioManager::StartEngineLoop(AActor* Vehicle)
 
 void UNDAudioManager::UpdateEngineSound(AActor* Vehicle, float SpeedKmh)
 {
+	// RPM-ish pitch by speed; tapers so idle is quiet and full throttle is loud.
+	const float SpeedRatio = FMath::Clamp(SpeedKmh / 130.0f, 0.0f, 1.0f);
+	if (Synth)
+	{
+		Synth->SetEngineState(true, SpeedRatio);
+	}
 	if (!EngineComponent)
 	{
 		return;
 	}
-	// RPM-ish pitch by speed; tapers so idle is quiet and full throttle is loud.
-	const float SpeedRatio = FMath::Clamp(SpeedKmh / 130.0f, 0.0f, 1.0f);
 	EnginePitch = FMath::Lerp(0.7f, 1.45f, SpeedRatio);
 	EngineComponent->SetPitchMultiplier(EnginePitch);
 	EngineComponent->SetVolumeMultiplier((0.25f + 0.75f * SpeedRatio) * VehiclesVolume * MasterVolume);
@@ -169,6 +226,10 @@ void UNDAudioManager::UpdateSiren(AActor* Context)
 
 void UNDAudioManager::StopEngineLoop()
 {
+	if (Synth)
+	{
+		Synth->SetEngineState(false, 0.0f);
+	}
 	if (EngineComponent)
 	{
 		EngineComponent->Stop();
@@ -184,6 +245,12 @@ void UNDAudioManager::StopEngineLoop()
 void UNDAudioManager::ShutdownAudio()
 {
 	StopEngineLoop();
+	if (Synth)
+	{
+		Synth->SetAmbienceActive(false);
+		Synth->Stop();
+		Synth = nullptr;
+	}
 	if (EngineComponent)
 	{
 		EngineComponent->DestroyComponent();

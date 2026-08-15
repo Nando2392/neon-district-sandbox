@@ -449,3 +449,37 @@ void ANDWorldBuilder::SpawnCityPopulation()
 		UE_LOG(LogTemp, Log, TEXT("NeonDistrict: district built, city population spawned."));
 	}
 }
+
+FVector ANDWorldBuilder::GetRandomStreetPoint() const
+{
+	// The district is fully procedural, so the baked navmesh does not exist;
+	// callers that need a reachable point must not depend on it. Streets are
+	// 30-wide avenue boxes at the grid lines; any point on one is open asphalt.
+	const float BlockPitch = BlockSize + 2.0f * StreetHalfWidth;
+	const float TotalW = BlocksX * BlockSize + (BlocksX + 1) * 2.0f * StreetHalfWidth;
+	const float TotalH = BlocksY * BlockSize + (BlocksY + 1) * 2.0f * StreetHalfWidth;
+
+	// Center of the avenue boxes along each grid line.
+	TArray<float> StreetX;
+	TArray<float> StreetY;
+	for (int32 X = 0; X <= BlocksX; ++X)
+	{
+		StreetX.Add(-TotalW * 0.5f + StreetHalfWidth + X * BlockPitch);
+	}
+	for (int32 Y = 0; Y <= BlocksY; ++Y)
+	{
+		StreetY.Add(-TotalH * 0.5f + StreetHalfWidth + Y * BlockPitch);
+	}
+
+	const bool bVertical = FMath::RandBool();
+	const float HalfLen = (bVertical ? TotalH : TotalW) * 0.5f;
+	const float Along = FMath::FRandRange(-HalfLen, HalfLen);
+
+	if (bVertical)
+	{
+		const float X = StreetX[FMath::RandRange(0, StreetX.Num() - 1)];
+		return FVector(X, Along, 0.0f);
+	}
+	const float Y = StreetY[FMath::RandRange(0, StreetY.Num() - 1)];
+	return FVector(Along, Y, 0.0f);
+}

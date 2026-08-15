@@ -26,7 +26,8 @@ public class NeonDistrict : ModuleRules
 			"SlateCore",
 			"AIModule",
 			"NavigationSystem",
-			"GameplayTasks"
+			"GameplayTasks",
+			"AudioMixer"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
