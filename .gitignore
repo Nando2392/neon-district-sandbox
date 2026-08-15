@@ -1,0 +1,32 @@
+# Unreal Engine generated
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.vscode/
+*.sln
+*.suo
+*.VC.db
+*.opensdf
+*.sdf
+*.db
+
+# Build output
+Build/
+Script/Intermediate/
+
+# Local packaging output
+Packaged/
+dist/
+
+# IDE
+.idea/
+*.user
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log

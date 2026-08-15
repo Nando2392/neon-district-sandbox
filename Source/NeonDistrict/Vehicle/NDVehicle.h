@@ -1,0 +1,81 @@
+// Copyright Neon District Sandbox. Public benchmark repo — original content only.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Pawn.h"
+#include "Player/NDInteractable.h"
+#include "NDVehicle.generated.h"
+
+class UChaosVehicleMovementComponent;
+class UStaticMeshComponent;
+class UCameraComponent;
+class USpringArmComponent;
+class APlayerController;
+
+/**
+ * Driveable Chaos vehicle. Enter/exit, throttle/brake/steer, driving camera,
+ * engine audio hookup. Wheel setup is created in code when empty so the
+ * vehicle is functional with zero asset dependency; fine-tuning happens in-editor.
+ */
+UCLASS()
+class NEONDISTRICT_API ANDVehicle : public APawn, public INDIInteractable
+{
+	GENERATED_BODY()
+
+public:
+	ANDVehicle();
+
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	// --- Driving input (fed by the player controller) ---
+	void ApplyDriveInput(float ThrottleBrake, float Steering);
+	void SetHandbrake(bool bEngaged);
+
+	// --- Enter / exit ---
+	void EnterVehicle(APlayerController* PC);
+	void ExitVehicle(APlayerController* PC);
+
+	FText GetDisplayName() const { return DisplayName; }
+
+	// INDIInteractable
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
+	FText GetInteractionPrompt() const;
+	virtual FText GetInteractionPrompt_Implementation() const override;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
+	bool Interact(APlayerController* Instigator);
+	virtual bool Interact_Implementation(APlayerController* Instigator) override;
+
+	UFUNCTION(BlueprintPure, Category = "Vehicle")
+	float GetForwardSpeedKmh() const;
+
+	/** Collision feedback: FX + alert audio on hard impacts (gated, no per-frame spam). */
+	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp,
+		bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
+
+protected:
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> BodyMesh = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UChaosVehicleMovementComponent> VehicleMovement = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	TObjectPtr<USpringArmComponent> SpringArm = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	TObjectPtr<UCameraComponent> FollowCamera = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle")
+	FText DisplayName = FText::FromString(TEXT("Ciclón K-77"));
+
+	/** Set true when the vehicle is being driven (skips idle physics sleep logic). */
+	bool bBeingDriven = false;
+
+private:
+	void EnsureWheels();
+	float LastImpactTime = -10.0f;
+	static constexpr float ImpactCooldown = 0.6f;
+};
