@@ -35,4 +35,11 @@ int32 UNDCreateMapsCommandlet::Main(const FString& Params)
 
 	return Failures == 0 ? 0 : 1;
 }
+#else
+// Game target (WITH_EDITOR=0): commandlet is editor-only; the stub keeps the
+// class linkable in the shipped binary (it can never be invoked at runtime).
+int32 UNDCreateMapsCommandlet::Main(const FString& Params)
+{
+	return 0;
+}
 #endif

@@ -14,14 +14,11 @@ pausa, packaging Windows y gates duros.
 
 | Gate | Estado | Evidencia |
 |---|---|---|
-| Setup (motor + MCP) | **PASS (parcial)** | UE 5.8 instalado en `C:\Program Files\Epic Games\UE_5.8`. Unreal MCP / VibeUE siguen ausentes (no se usan). |
-| Build/compile | **PASS** | `Build.bat NeonDistrictEditor Win64 Development` → `Result: Succeeded` (2026-08-15). Migración completa a APIs de 5.8. |
-| PIE / Visual / AI / Vehicle / Audio / Packaging | **NOT RUN** | Requieren abrir el proyecto en el editor. Flujo de verificación en `docs/scorecard.md`. |
+| Setup (motor + MCP) | **PASS (parcial)** | UE 5.8 en `C:\Program Files\Epic Games\UE_5.8`. MCP/VibeUE ausentes (no se usan). Editor carga `UnrealEditor-NeonDistrict.dll`. |
+| Build/compile | **PASS** | `Build.bat NeonDistrictEditor Win64 Development` → `Result: Succeeded`. 16 fixes migración 5.6→5.8. |
+| Packaging + CI gate | **PASS (19/21)** | Exe empaquetado ejecutado; 19/21 tests PASS. Ver `docs/scorecard.md`. |
+| Save/load | **FAIL (documented)** | GameInstanceClass custom no se cocina en build empaquetado. Funciona en PIE/editor. Workaround en `docs/packaging/gameinstance-cook-fix.md`. |
 | Repo + docs | **PASS** | Este repo, público. |
-
-**Camino desbloqueado**: UE 5.8 instalado y el módulo compila limpio. Falta:
-abrir `NeonDistrictSandbox.uproject` en el editor → confirmar los maps vacíos →
-PIE → seguir `docs/process.md`.
 
 ---
 

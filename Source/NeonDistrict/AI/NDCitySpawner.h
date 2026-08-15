@@ -42,19 +42,23 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Spawner")
 	int32 TrafficVehicleCount = 3;
 
+	/** NPC class to spawn for civilians (defaults to ANDNPCCharacter if not set). */
 	UPROPERTY(EditAnywhere, Category = "Spawner")
 	TSubclassOf<ANDNPCCharacter> CivilianClass;
 
+	/** NPC class to spawn for police (defaults to ANDNPCCharacter if not set). */
 	UPROPERTY(EditAnywhere, Category = "Spawner")
 	TSubclassOf<ANDNPCCharacter> PoliceClass;
 
+	/** Vehicle class for drivable vehicles (defaults to ANDVehicle if not set). */
 	UPROPERTY(EditAnywhere, Category = "Spawner")
 	TSubclassOf<ANDVehicle> VehicleClass;
 
+	/** Vehicle class for traffic (defaults to ANDTrafficVehicle if not set). */
 	UPROPERTY(EditAnywhere, Category = "Spawner")
 	TSubclassOf<ANDTrafficVehicle> TrafficClass;
 
-	/** Mission NPCs: index 0 = giver (Mei), 1 = package, 2 = delivery (Nova). */
+	/** Mission NPCs: index 0 = Mei (giver), index 1 = Package holder, index 2 = Nova (delivery). */
 	UPROPERTY(EditAnywhere, Category = "Spawner|Mission")
 	TArray<TSubclassOf<ANDNPCCharacter>> MissionNPCClasses;
 
@@ -64,5 +68,6 @@ private:
 	void SpawnPolice();
 	void SpawnVehicles();
 	void SpawnTraffic();
+	void SpawnMissionNPCs();
 	TArray<USplineComponent*> CollectTrafficRoutes() const;
 };

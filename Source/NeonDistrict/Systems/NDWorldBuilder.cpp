@@ -26,6 +26,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/App.h"
 
 #if WITH_EDITOR
 #include "MaterialEditingLibrary.h"
@@ -71,43 +72,50 @@ void ANDWorldBuilder::Tick(float DeltaSeconds)
 
 UMaterial* ANDWorldBuilder::CreateNeonMaterial()
 {
+	// IMPORTANT: WITH_EDITOR is true for the UnrealEditor binary even when
+	// launched with `-game` (standalone), but the MaterialEditor module is not
+	// loaded in game mode, so UMaterialEditingLibrary calls crash. Gate on the
+	// runtime mode: FApp::IsGame() is true for standalone `-game`; PIE in the
+	// editor keeps the full editor path.
 #if WITH_EDITOR
-	// NeonMat: BaseColor <- NeonColor; Emissive <- NeonColor * EmissiveStrength
-	// (Material pin wiring is editor-only via UMaterialEditingLibrary in UE 5.8.)
-	UMaterial* Mat = NewObject<UMaterial>(this, UMaterial::StaticClass(), TEXT("ND_NeonMat"));
-	Mat->SetFlags(RF_Transient);
+	if (!FApp::IsGame())
+	{
+		// NeonMat: BaseColor <- NeonColor; Emissive <- NeonColor * EmissiveStrength
+		// (Material pin wiring is editor-only via UMaterialEditingLibrary in UE 5.8.)
+		UMaterial* Mat = NewObject<UMaterial>(this, UMaterial::StaticClass(), TEXT("ND_NeonMat"));
+		Mat->SetFlags(RF_Transient);
 
-	UMaterialExpressionVectorParameter* ColorParam = NewObject<UMaterialExpressionVectorParameter>(Mat);
-	ColorParam->ParameterName = TEXT("NeonColor");
-	ColorParam->DefaultValue = FLinearColor::White;
+		UMaterialExpressionVectorParameter* ColorParam = NewObject<UMaterialExpressionVectorParameter>(Mat);
+		ColorParam->ParameterName = TEXT("NeonColor");
+		ColorParam->DefaultValue = FLinearColor::White;
 
-	UMaterialExpressionScalarParameter* StrengthParam = NewObject<UMaterialExpressionScalarParameter>(Mat);
-	StrengthParam->ParameterName = TEXT("EmissiveStrength");
-	StrengthParam->DefaultValue = 1.0f;
+		UMaterialExpressionScalarParameter* StrengthParam = NewObject<UMaterialExpressionScalarParameter>(Mat);
+		StrengthParam->ParameterName = TEXT("EmissiveStrength");
+		StrengthParam->DefaultValue = 1.0f;
 
-	UMaterialExpressionMultiply* Multiply = NewObject<UMaterialExpressionMultiply>(Mat);
-	Multiply->A.Expression = ColorParam;
-	Multiply->B.Expression = StrengthParam;
+		UMaterialExpressionMultiply* Multiply = NewObject<UMaterialExpressionMultiply>(Mat);
+		Multiply->A.Expression = ColorParam;
+		Multiply->B.Expression = StrengthParam;
 
-	Mat->GetExpressionCollection().AddExpression(ColorParam);
-	Mat->GetExpressionCollection().AddExpression(StrengthParam);
-	Mat->GetExpressionCollection().AddExpression(Multiply);
+		Mat->GetExpressionCollection().AddExpression(ColorParam);
+		Mat->GetExpressionCollection().AddExpression(StrengthParam);
+		Mat->GetExpressionCollection().AddExpression(Multiply);
 
-	UMaterialEditingLibrary::ConnectMaterialProperty(ColorParam, TEXT(""), MP_BaseColor);
-	UMaterialEditingLibrary::ConnectMaterialProperty(Multiply, TEXT(""), MP_EmissiveColor);
-	Mat->BlendMode = BLEND_Opaque;
-	Mat->SetShadingModel(MSM_DefaultLit);
-	Mat->TwoSided = true;
-	Mat->PostEditChange();
+		UMaterialEditingLibrary::ConnectMaterialProperty(ColorParam, TEXT(""), MP_BaseColor);
+		UMaterialEditingLibrary::ConnectMaterialProperty(Multiply, TEXT(""), MP_EmissiveColor);
+		Mat->BlendMode = BLEND_Opaque;
+		Mat->SetShadingModel(MSM_DefaultLit);
+		Mat->TwoSided = true;
+		Mat->PostEditChange();
 
-	return Mat;
-#else
-	// Packaged (non-editor) build: no procedural material graph available;
-	// fall back to the engine's basic shape material. Parameters are no-ops,
-	// so buildings render neutral gray — documented limitation, not hidden.
+		return Mat;
+	}
+#endif
+	// Standalone game (-game) / packaged build: no procedural material graph
+	// available; fall back to the engine's basic shape material. Parameters are
+	// no-ops, so buildings render neutral gray — documented limitation, not hidden.
 	return LoadObject<UMaterial>(nullptr,
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-#endif
 }
 
 UMaterialInstanceDynamic* ANDWorldBuilder::MakeMID(UMaterial* Base, const FLinearColor& Color, float EmissiveStrength)
