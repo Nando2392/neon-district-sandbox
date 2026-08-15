@@ -1,4 +1,4 @@
-// Copyright Neon District Sandbox. Public benchmark repo — original content only.
+// Copyright Neon District Sandbox. Public benchmark repo — original content only
 
 #pragma once
 
@@ -10,12 +10,13 @@ class UInputMappingContext;
 class UInputAction;
 class ANDCharacter;
 class ANDVehicle;
-class UNDHUDWidget;
-class UNDPauseWidget;
+class UUserWidget;
 class AActor;
 
+class UNDHUDWidget;
+
 /**
- * Player controller: Enhanced Input (runtime-created, no asset dependency),
+ * Player controller: Enhanced Input fallback system with classical input bindings,
  * interaction raycast from the camera, vehicle enter/exit, pause/menu, quick save/load.
  */
 UCLASS()
@@ -41,18 +42,25 @@ public:
 
 	ANDCharacter* GetPlayerCharacter() const { return PlayerCharacter; }
 
-	UFUNCTION(BlueprintPure, Category = "Player")
-	UNDHUDWidget* GetHUDWidget() const { return HUDWidget; }
+	UFUNCTION(BlueprintPure, Category = "HUD")
+	UNDHUDWidget* GetHUDWidget() const;
 
-	/** Resume from the pause widget (also bound to Escape in-game). */
-	void HandlePauseFromWidget();
-
-	/** Toggle pause + pause widget (Escape). Public so the benchmark runner can exercise it. */
+	/** Toggle pause + pause widget (Escape). */
 	void HandlePause();
 
+	/** Resume from the pause widget. */
+	void HandlePauseFromWidget();
+
+	// Public for benchmark testing
+	void TestMoveForward(float Value);
+	void TestMoveRight(float Value);
+	void TestJump();
+	void TestInteract();
+
 private:
+	void SetupGameplayInput();
+
 	// --- Enhanced Input (created at runtime so the repo needs zero input assets) ---
-	void CreateInputActions();
 	void HandleMove(const struct FInputActionValue& Value);
 	void HandleLook(const struct FInputActionValue& Value);
 	void HandleJumpStart();
@@ -63,6 +71,17 @@ private:
 	void HandleEnterExitVehicle();
 	void HandleQuickSave();
 	void HandleQuickLoad();
+
+	// --- Fallback classical Input (for builds without Enhanced Input assets) ---
+	void SetupFallbackInput();
+	void HandleMoveForwardFallback(float AxisValue);
+	void HandleMoveRightFallback(float AxisValue);
+	void HandleLookHorizontalFallback(float AxisValue);
+	void HandleLookVerticalFallback(float AxisValue);
+	void HandleMoveAxis(const FVector& Direction, float Value);
+	bool TrySetupEnhancedInput();
+	void BindEnhancedInput(class UEnhancedInputComponent* EIC);
+	void SetupInputMappings();
 
 	// --- Interaction ---
 	void UpdateInteractionTarget();
@@ -100,10 +119,13 @@ private:
 	TObjectPtr<UNDHUDWidget> HUDWidget = nullptr;
 
 	UPROPERTY()
-	TObjectPtr<UNDPauseWidget> PauseWidget = nullptr;
+	TObjectPtr<UUserWidget> PauseWidget = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<ANDVehicle> DrivenVehicle = nullptr;
+
+	/** True if using fallback classical InputComponent bindings */
+	bool bUsingFallback = false;
 
 	bool bIsDriving = false;
 };

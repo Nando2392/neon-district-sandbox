@@ -37,12 +37,16 @@ public class NeonDistrict : ModuleRules
 
 		if (Target.bBuildEditor)
 		{
-			// Editor-only: NDCreateMapsCommandlet (blank-map generation) and
-			// UMaterialEditingLibrary (neon material graph construction).
+			// Editor-only: MaterialEditor for runtime material creation
+			// Note: AssetTools/ObjectTools removed - using AssetRegistry instead
 			PrivateDependencyModuleNames.AddRange(new string[] {
 				"UnrealEd",
-				"MaterialEditor"
+				"MaterialEditor",
+				"AssetRegistry"
 			});
+
+			// Add any needed editor-only classes
+			PublicIncludePaths.Add(ModuleDirectory + "/Editor");
 		}
 	}
 }
