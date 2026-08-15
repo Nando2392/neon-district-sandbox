@@ -7,7 +7,7 @@
 #include "Player/NDInteractable.h"
 #include "NDVehicle.generated.h"
 
-class UChaosVehicleMovementComponent;
+class UChaosWheeledVehicleMovementComponent;
 class UStaticMeshComponent;
 class UCameraComponent;
 class USpringArmComponent;
@@ -45,8 +45,8 @@ public:
 	virtual FText GetInteractionPrompt_Implementation() const override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
-	bool Interact(APlayerController* Instigator);
-	virtual bool Interact_Implementation(APlayerController* Instigator) override;
+	bool Interact(APlayerController* PlayerController);
+	virtual bool Interact_Implementation(APlayerController* PlayerController) override;
 
 	UFUNCTION(BlueprintPure, Category = "Vehicle")
 	float GetForwardSpeedKmh() const;
@@ -60,7 +60,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> BodyMesh = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
-	TObjectPtr<UChaosVehicleMovementComponent> VehicleMovement = nullptr;
+	TObjectPtr<UChaosWheeledVehicleMovementComponent> VehicleMovement = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	TObjectPtr<USpringArmComponent> SpringArm = nullptr;

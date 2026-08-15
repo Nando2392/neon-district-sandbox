@@ -13,7 +13,6 @@
 #include "Components/SkyAtmosphereComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
-#include "Engine/SkyAtmosphere.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
@@ -27,6 +26,10 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
+
+#if WITH_EDITOR
+#include "MaterialEditingLibrary.h"
+#endif
 
 namespace
 {
@@ -68,7 +71,9 @@ void ANDWorldBuilder::Tick(float DeltaSeconds)
 
 UMaterial* ANDWorldBuilder::CreateNeonMaterial()
 {
+#if WITH_EDITOR
 	// NeonMat: BaseColor <- NeonColor; Emissive <- NeonColor * EmissiveStrength
+	// (Material pin wiring is editor-only via UMaterialEditingLibrary in UE 5.8.)
 	UMaterial* Mat = NewObject<UMaterial>(this, UMaterial::StaticClass(), TEXT("ND_NeonMat"));
 	Mat->SetFlags(RF_Transient);
 
@@ -88,15 +93,21 @@ UMaterial* ANDWorldBuilder::CreateNeonMaterial()
 	Mat->GetExpressionCollection().AddExpression(StrengthParam);
 	Mat->GetExpressionCollection().AddExpression(Multiply);
 
-	Mat->BaseColor.Expression = ColorParam;
-	Mat->EmissiveColor.Expression = Multiply;
-	Mat->EmissiveColor.OutputIndex = 0;
+	UMaterialEditingLibrary::ConnectMaterialProperty(ColorParam, TEXT(""), MP_BaseColor);
+	UMaterialEditingLibrary::ConnectMaterialProperty(Multiply, TEXT(""), MP_EmissiveColor);
 	Mat->BlendMode = BLEND_Opaque;
-	Mat->ShadingModel = MSM_DefaultLit;
+	Mat->SetShadingModel(MSM_DefaultLit);
 	Mat->TwoSided = true;
 	Mat->PostEditChange();
 
 	return Mat;
+#else
+	// Packaged (non-editor) build: no procedural material graph available;
+	// fall back to the engine's basic shape material. Parameters are no-ops,
+	// so buildings render neutral gray — documented limitation, not hidden.
+	return LoadObject<UMaterial>(nullptr,
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+#endif
 }
 
 UMaterialInstanceDynamic* ANDWorldBuilder::MakeMID(UMaterial* Base, const FLinearColor& Color, float EmissiveStrength)
@@ -389,9 +400,9 @@ void ANDWorldBuilder::BuildAtmosphere()
 		FVector(0, 0, 500.0f), FRotator::ZeroRotator);
 	if (Fog)
 	{
-		Fog->GetFogComponent()->SetFogDensity(0.006f);
-		Fog->GetFogComponent()->SetFogInscatteringColor(FLinearColor(0.08f, 0.05f, 0.16f));
-		Fog->GetFogComponent()->SetFogHeightFalloff(0.02f);
+		Fog->GetComponent()->SetFogDensity(0.006f);
+		Fog->GetComponent()->SetFogInscatteringColor(FLinearColor(0.08f, 0.05f, 0.16f));
+		Fog->GetComponent()->SetFogHeightFalloff(0.02f);
 	}
 
 	// Sky atmosphere for a night skyline.
@@ -399,7 +410,7 @@ void ANDWorldBuilder::BuildAtmosphere()
 		FVector(0, 0, 0), FRotator::ZeroRotator);
 	if (Sky)
 	{
-		Sky->GetComponent()->SetHeight(100.0f);
+		Sky->GetComponent()->SetAtmosphereHeight(100.0f);
 	}
 
 	// Post-process: controlled bloom + subtle vignette + warm grade.

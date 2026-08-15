@@ -45,7 +45,7 @@ public:
 	FNDOnHeatEvent OnHeatEvent;
 
 private:
-	void TickDecay(float DeltaSeconds);
+	void TickDecay();
 	void ApplyLevel(int32 NewLevel);
 
 	FTimerHandle DecayTimerHandle;

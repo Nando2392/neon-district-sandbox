@@ -2,6 +2,7 @@
 
 #include "AI/NDCitySpawner.h"
 #include "AI/NDNPCCharacter.h"
+#include "AI/NDNPCAIController.h"
 #include "Vehicle/NDVehicle.h"
 #include "Vehicle/NDTrafficVehicle.h"
 #include "Core/NDPerfConstants.h"
@@ -36,7 +37,7 @@ FVector ANDCitySpawner::PickNavSpawnPoint(float Radius) const
 {
 	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 	FVector Location = GetActorLocation();
-	FVector NavLocation;
+	FNavLocation NavLocation;
 	if (NavSys && NavSys->GetRandomReachablePointInRadius(GetActorLocation(), Radius, NavLocation))
 	{
 		Location = NavLocation;

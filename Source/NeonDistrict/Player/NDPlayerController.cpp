@@ -155,13 +155,13 @@ void ANDPlayerController::HandleMove(const FInputActionValue& Value)
 		return;
 	}
 
-	if (APawn* Pawn = GetPawn())
+	if (APawn* P = GetPawn())
 	{
 		const FRotator Yaw(0.0f, GetControlRotation().Yaw, 0.0f);
 		const FVector Forward = FRotationMatrix(Yaw).GetUnitAxis(EAxis::X);
 		const FVector Right = FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y);
-		Pawn->AddMovementInput(Forward, Axis.X);
-		Pawn->AddMovementInput(Right, Axis.Y);
+		P->AddMovementInput(Forward, Axis.X);
+		P->AddMovementInput(Right, Axis.Y);
 	}
 }
 
@@ -226,7 +226,7 @@ void ANDPlayerController::HandleInteract()
 	{
 		return;
 	}
-	if (CurrentInteractable->Implements<UNDInteractable>())
+	if (CurrentInteractable->Implements<UNDIInteractable>())
 	{
 		INDIInteractable::Execute_Interact(CurrentInteractable, this);
 	}
@@ -243,7 +243,7 @@ void ANDPlayerController::HandleEnterExitVehicle()
 		return;
 	}
 
-	if (CurrentInteractable && CurrentInteractable->Implements<UNDInteractable>())
+	if (CurrentInteractable && CurrentInteractable->Implements<UNDIInteractable>())
 	{
 		// Let the vehicle handle entering itself; other interactables ignore F.
 		INDIInteractable::Execute_Interact(CurrentInteractable, this);
@@ -260,7 +260,7 @@ void ANDPlayerController::HandlePause()
 
 	if (World->IsPaused())
 	{
-		World->SetPaused(false);
+		UGameplayStatics::SetGamePaused(World, false);
 		if (PauseWidget)
 		{
 			PauseWidget->RemoveFromParent();
@@ -271,7 +271,7 @@ void ANDPlayerController::HandlePause()
 	}
 	else
 	{
-		World->SetPaused(true);
+		UGameplayStatics::SetGamePaused(World, true);
 		PauseWidget = CreateWidget<UNDPauseWidget>(this, UNDPauseWidget::StaticClass());
 		if (PauseWidget)
 		{
@@ -306,13 +306,13 @@ void ANDPlayerController::HandleQuickLoad()
 		if (GI->LoadGame())
 		{
 			// Teleport the character to the saved location (mission state already restored).
-			if (ANDCharacter* Pawn = Cast<ANDCharacter>(GetPawn()))
+			if (ANDCharacter* P = Cast<ANDCharacter>(GetPawn()))
 			{
 				const FVector SavedLoc = GI->GetMutableSave()->PlayerLocation;
 				if (!SavedLoc.IsNearlyZero())
 				{
-					Pawn->SetActorLocation(SavedLoc);
-					Pawn->SetActorRotation(FRotator(0.0f, GI->GetMutableSave()->PlayerYaw, 0.0f));
+					P->SetActorLocation(SavedLoc);
+					P->SetActorRotation(FRotator(0.0f, GI->GetMutableSave()->PlayerYaw, 0.0f));
 				}
 			}
 			if (HUDWidget)
@@ -337,9 +337,9 @@ void ANDPlayerController::UpdateInteractionTarget()
 	GetPlayerViewPoint(ViewLocation, ViewRotation);
 
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(NDInteractionProbe), true);
-	if (APawn* Pawn = GetPawn())
+	if (APawn* P = GetPawn())
 	{
-		Params.AddIgnoredActor(Pawn);
+		Params.AddIgnoredActor(P);
 	}
 
 	FHitResult Hit;
@@ -348,7 +348,7 @@ void ANDPlayerController::UpdateInteractionTarget()
 		ECC_Visibility, Params))
 	{
 		AActor* HitActor = Hit.GetActor();
-		if (HitActor && HitActor->Implements<UNDInteractable>())
+		if (HitActor && HitActor->Implements<UNDIInteractable>())
 		{
 			NewTarget = HitActor;
 		}

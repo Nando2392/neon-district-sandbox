@@ -6,7 +6,7 @@
 #include "Core/NDGameInstance.h"
 #include "Audio/NDAudioManager.h"
 
-#include "ChaosVehicleMovementComponent.h"
+#include "ChaosWheeledVehicleMovementComponent.h"
 #include "ChaosVehicleWheel.h"
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
@@ -55,7 +55,7 @@ ANDVehicle::ANDVehicle()
 	BodyMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BodyMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 
-	VehicleMovement = CreateDefaultSubobject<UChaosVehicleMovementComponent>(TEXT("VehicleMovement"));
+	VehicleMovement = CreateDefaultSubobject<UChaosWheeledVehicleMovementComponent>(TEXT("VehicleMovement"));
 	VehicleMovement->SetUpdatedComponent(BodyMesh);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -165,9 +165,9 @@ FText ANDVehicle::GetInteractionPrompt_Implementation() const
 	return FText::FromString(TEXT("Entrar al vehículo (E)"));
 }
 
-bool ANDVehicle::Interact_Implementation(APlayerController* Instigator)
+bool ANDVehicle::Interact_Implementation(APlayerController* PlayerController)
 {
-	EnterVehicle(Instigator);
+	EnterVehicle(PlayerController);
 	return true;
 }
 
@@ -190,7 +190,7 @@ void ANDVehicle::EnsureWheels()
 	auto AddWheel = [&](float X, float Y)
 	{
 		FChaosWheelSetup W = Wheel;
-		W.LocalLocation = FVector(X, Y, -35.0f);
+		W.AdditionalOffset = FVector(X, Y, -35.0f);
 		VehicleMovement->WheelSetups.Add(W);
 	};
 
@@ -202,7 +202,7 @@ void ANDVehicle::EnsureWheels()
 	// Sensible defaults for a small urban coupe.
 	VehicleMovement->Mass = 1300.0f;
 	VehicleMovement->EngineSetup.MaxRPM = 6800.0f;
-	VehicleMovement->EngineSetup.MOI = 0.2f;
+	VehicleMovement->EngineSetup.EngineRevUpMOI = 0.2f;
 	VehicleMovement->TransmissionSetup.FinalRatio = 3.2f;
 	VehicleMovement->SteeringSetup.SteeringCurve.GetRichCurve()->Reset();
 	VehicleMovement->SteeringSetup.SteeringCurve.GetRichCurve()->AddKey(0.0f, 0.9f);

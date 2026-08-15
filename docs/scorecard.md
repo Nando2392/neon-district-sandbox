@@ -1,11 +1,11 @@
 # Scorecard — Neon District Sandbox
 
 Criterios del benchmark con estado PASS/FAIL/NOT RUN y evidencia. Estado a
-2026-08-15: **sin motor instalado** — los gates ejecutables están NOT RUN hasta
-que haya UE 5.6; el código del repo es la base engine-ready sobre la que se
-ejecutan.
+2026-08-15: **UE 5.8 instalado y compile gate PASSED** — los gates de PIE,
+visual, AI, vehicle, audio y packaging siguen NOT RUN hasta abrir el proyecto
+en el editor.
 
-Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor) · 🔶 PARCIAL
+Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor/editor) · 🔶 PARCIAL
 
 ---
 
@@ -13,20 +13,20 @@ Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor) · 🔶 PARCIAL
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| 1. Unreal Editor disponible | ❌ FAIL | No instalado (ni launcher) al inicio; launcher instalado vía winget en sesión; motor pendiente de login+descarga |
-| 2. Proyecto abre | ⏸ NOT RUN | Requiere motor; `.uproject` + targets + configs listos |
-| 3. Unreal MCP responde | ❌ FAIL | Sin editor no hay plugin/MCP; documentado en `docs/process.md` |
+| 1. Unreal Editor disponible | ✅ PASS | `C:\Program Files\Epic Games\UE_5.8` + `UnrealEditor.exe` presente (2026-08-15) |
+| 2. Proyecto abre | 🔶 PARCIAL | `.uproject` asociado a 5.8 (`EngineAssociation: "5.8"`); apertura en editor pendiente |
+| 3. Unreal MCP responde | ❌ FAIL | Sin plugin/MCP; documentado en `docs/process.md` — se trabaja con tooling estándar |
 | 4. Toolsets listados | ❌ FAIL | Idem |
-| 5. VibeUE instalado | ❌ FAIL | No existe `AgentCity/Plugins/VibeUE`; se continuó con tooling estándar |
+| 5. VibeUE instalado | ❌ FAIL | No existe; se continuó con tooling estándar |
 
 ## Build/compile gate
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Proyecto abre | ⏸ | — |
-| Compile sin errores | ⏸ | C++ escrito (23 archivos); verificación estática de símbolos hecha (grep cruzado); compilación real pendiente |
+| Proyecto abre | 🔶 | Asociado a 5.8; apertura pendiente |
+| Compile sin errores | ✅ PASS | `Build.bat NeonDistrictEditor Win64 Development` → `Result: Succeeded` (2026-08-15). Migración completa a APIs de 5.8 (ver `docs/process.md` §Migración) |
 | Assets referenciados existen | 🔶 | Soft-paths: skeletal mesh NPC y sonidos opcionales; meshes del motor (`/Engine/BasicShapes/*`) estándar |
-| Sin warnings críticos ignorados | ⏸ | — |
+| Sin warnings críticos ignorados | 🔶 | Warnings de Upgrade (BuildSettings V5→V7, IncludeOrder) presentes pero no bloqueantes; `bOverrideBuildEnvironment` evita la infracción de entorno compartido |
 
 ## PIE gameplay gate
 
@@ -49,9 +49,9 @@ Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor) · 🔶 PARCIAL
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Screenshots (menú, calle, jugador, NPCs, vehículo, persecución, misión) | ⏸ | `docs/screenshots/` vacío hasta tener motor |
-| Escena no-default-template | ⏸ | Diseño: world builder procedural neón (paleta, niebla, bloom) — a validar en motor |
-| Sin predominio de cubos/cápsulas | ⏸ | Edificios con fachadas neón + ventanas + antenas; props variados |
+| Screenshots (menú, calle, jugador, NPCs, vehículo, persecución, misión) | ⏸ | `docs/screenshots/` pendiente de PIE |
+| Escena no-default-template | 🔶 | Diseño: world builder procedural neón — a validar en PIE |
+| Sin predominio de cubos/cápsulas | 🔶 | Edificios con fachadas neón + ventanas + antenas (código); validación visual pendiente |
 | Humanos reconocibles | 🔶 | Requiere asignar skeletal mesh humano en editor (soft-path); sin él, mesh default del motor |
 | Ambiente urbano claro | ⏸ | — |
 | UI legible / cámara encuadrada / lighting intencional | ⏸ | — |
@@ -110,7 +110,8 @@ Leyenda: ✅ PASS · ❌ FAIL · ⏸ NOT RUN (requiere motor) · 🔶 PARCIAL
 
 ## Cierre
 
-Ningún gate ejecutable se declara pasado sin motor. Cuando el motor esté
-instalado, se ejecutará el checklist en orden y cada fila cambiará a PASS/FAIL
-con captura (screenshots en `docs/screenshots/`, logs y fixes en
+Ningún gate ejecutable se declara pasado sin evidencia en el editor. Con el
+compile PASSED (5.8), el siguiente paso es abrir el proyecto en el editor,
+confirmar los maps vacíos y ejecutar el checklist en orden; cada fila cambiará
+a PASS/FAIL con captura (screenshots en `docs/screenshots/`, logs y fixes en
 `docs/process.md`).

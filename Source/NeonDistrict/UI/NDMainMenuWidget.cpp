@@ -6,8 +6,10 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Styling/CoreStyle.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -30,7 +32,7 @@ void UNDMainMenuWidget::NativeConstruct()
 	// Title.
 	UTextBlock* Title = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Title"));
 	Title->SetText(FText::FromString(TEXT("NEON DISTRICT")));
-	Title->SetFont(FSlateFontInfo(nullptr, 64, FName("Bold")));
+	Title->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 64));
 	Title->SetColorAndOpacity(FLinearColor(1.0f, 0.1f, 0.6f, 1.0f));
 	UCanvasPanelSlot* TitleSlot = Root->AddChildToCanvas(Title);
 	TitleSlot->SetAnchors(FAnchors(0.5f, 0.35f, 0.5f, 0.35f));
@@ -39,7 +41,7 @@ void UNDMainMenuWidget::NativeConstruct()
 
 	UTextBlock* Subtitle = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Subtitle"));
 	Subtitle->SetText(FText::FromString(TEXT("SANDBOX")));
-	Subtitle->SetFont(FSlateFontInfo(nullptr, 28, FName("Bold")));
+	Subtitle->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 28));
 	Subtitle->SetColorAndOpacity(FLinearColor(0.1f, 0.95f, 1.0f, 1.0f));
 	UCanvasPanelSlot* SubSlot = Root->AddChildToCanvas(Subtitle);
 	SubSlot->SetAnchors(FAnchors(0.5f, 0.42f, 0.5f, 0.42f));
@@ -66,7 +68,7 @@ void UNDMainMenuWidget::NativeConstruct()
 	UTextBlock* Hint = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Hint"));
 	Hint->SetText(FText::FromString(
 		TEXT("WASD mover · Ratón cámara · Shift correr · Espacio saltar/freno\nE interactuar · F entrar/salir vehículo · ESC pausa · F5 guardar · F9 cargar")));
-	Hint->SetFont(FSlateFontInfo(nullptr, 14));
+	Hint->SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14));
 	Hint->SetColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.7f, 1.0f));
 	UCanvasPanelSlot* HintSlot = Root->AddChildToCanvas(Hint);
 	HintSlot->SetAnchors(FAnchors(0.5f, 0.9f, 0.5f, 0.9f));
@@ -76,16 +78,20 @@ void UNDMainMenuWidget::NativeConstruct()
 
 UButton* UNDMainMenuWidget::MakeButton(const FText& Label)
 {
+	// Min desired width lives on a USizeBox in UE 5.8 (UButton lost it).
+	USizeBox* WidthBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+	WidthBox->SetMinDesiredWidth(320.0f);
+
 	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
-	Button->SetMinDesiredWidth(320.0f);
 
 	UTextBlock* ButtonLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 	ButtonLabel->SetText(Label);
-	ButtonLabel->SetFont(FSlateFontInfo(nullptr, 22, FName("Bold")));
+	ButtonLabel->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 22));
 	ButtonLabel->SetColorAndOpacity(FLinearColor(0.05f, 0.05f, 0.1f, 1.0f));
 	Button->AddChild(ButtonLabel);
 
-	ButtonBox->AddChildToVerticalBox(Button);
+	WidthBox->AddChild(Button);
+	ButtonBox->AddChildToVerticalBox(WidthBox);
 	return Button;
 }
 

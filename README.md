@@ -14,28 +14,28 @@ pausa, packaging Windows y gates duros.
 
 | Gate | Estado | Evidencia |
 |---|---|---|
-| Setup (motor + MCP) | **FAIL — bloqueado** | Sin Unreal Engine ni Epic Launcher en la máquina al empezar. Hardware sí apto (RTX 4070 Laptop, 32GB RAM, VS2022 + BuildTools). |
-| Build/compile | **NOT RUN** | Requiere motor UE 5.6 instalado. Código 100% escrito, revisado por consistencia de símbolos. |
-| PIE / Visual / AI / Vehicle / Audio / Packaging | **NOT RUN** | Requieren motor. Flujo de verificación documentado en `docs/scorecard.md`. |
+| Setup (motor + MCP) | **PASS (parcial)** | UE 5.8 instalado en `C:\Program Files\Epic Games\UE_5.8`. Unreal MCP / VibeUE siguen ausentes (no se usan). |
+| Build/compile | **PASS** | `Build.bat NeonDistrictEditor Win64 Development` → `Result: Succeeded` (2026-08-15). Migración completa a APIs de 5.8. |
+| PIE / Visual / AI / Vehicle / Audio / Packaging | **NOT RUN** | Requieren abrir el proyecto en el editor. Flujo de verificación en `docs/scorecard.md`. |
 | Repo + docs | **PASS** | Este repo, público. |
 
-**Camino desbloqueado**: el Epic Games Launcher quedó instalado vía `winget`
-durante esta sesión. Falta: login en el launcher → instalar **Unreal Engine 5.6**
-(~40-90 GB) → abrir `NeonDistrictSandbox.uproject` → seguir `docs/process.md`.
+**Camino desbloqueado**: UE 5.8 instalado y el módulo compila limpio. Falta:
+abrir `NeonDistrictSandbox.uproject` en el editor → confirmar los maps vacíos →
+PIE → seguir `docs/process.md`.
 
 ---
 
 ## Setup (Windows)
 
-1. **Unreal Engine 5.6** (ya instalado el Epic Games Launcher):
-   - Login en el launcher → Unreal Engine → 5.6 → Install (vs 5.6.0+).
-   - Con Visual Studio 2022 + C++ workload (ya presente en la máquina).
+1. **Unreal Engine 5.8** (ya instalado — `C:\Program Files\Epic Games\UE_5.8`).
+   - Requiere VS2022 + C++ workload (presente) y .NET Framework 4.8.1 SDK
+     (instalado vía `winget install --id Microsoft.DotNet.Framework.DeveloperPack_4`).
 2. Abrir `NeonDistrictSandbox.uproject` (botón derecho → "Generate Visual Studio
    project files" la primera vez).
-3. **Crear los dos niveles** (una vez, 2 min):
-   - `File > New Level > Empty Level` → guardar como
-     `Content/Maps/ND_MainMenu.umap`
-   - Repetir → `Content/Maps/ND_City.umap`
+3. **Los dos niveles** `Content/Maps/ND_MainMenu.umap` y `ND_City.umap` ya
+   existen (creados por el commandlet `NDCreateMapsCommandlet`; vacíos, 0
+   actores). Si no existen: `File > New Level > Empty Level` → guardar con esos
+   nombres.
    - *No hace falta colocar nada*: el `NDWorldSubsystem` construye el distrito
      completo al entrar en cualquier nivel que no sea el menú.
 4. `Ctrl+Shift+P` en el editor (o menú Tools) → *Compile* para compilar el módulo C++.

@@ -12,6 +12,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Styling/CoreStyle.h"
 #include "Blueprint/WidgetTree.h"
 
 void UNDHUDWidget::NativeConstruct()
@@ -24,7 +25,7 @@ void UNDHUDWidget::NativeConstruct()
 		Wanted->OnWantedLevelChanged.AddDynamic(this, &UNDHUDWidget::HandleWantedChanged);
 		HandleWantedChanged(Wanted->GetWantedLevel());
 	}
-	if (NDMissionSystem* Mission = GetGameInstance()->GetSubsystem<NDMissionSystem>())
+	if (UNDMissionSystem* Mission = GetGameInstance()->GetSubsystem<UNDMissionSystem>())
 	{
 		Mission->OnMissionStageChanged.AddDynamic(this, &UNDHUDWidget::HandleMissionChanged);
 		HandleMissionChanged(Mission->GetMissionStage());
@@ -62,17 +63,17 @@ void UNDHUDWidget::BuildProceduralHUD()
 	InfoBorder->SetContent(InfoBox);
 
 	ObjectiveTextBlock = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Objective"));
-	ObjectiveTextBlock->SetFont(FSlateFontInfo(nullptr, 22, FName("Bold")));
+	ObjectiveTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 22));
 	ObjectiveTextBlock->SetColorAndOpacity(FLinearColor(0.25f, 0.95f, 1.0f, 1.0f));
 	InfoBox->AddChildToVerticalBox(ObjectiveTextBlock);
 
 	WantedTextBlock = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Wanted"));
-	WantedTextBlock->SetFont(FSlateFontInfo(nullptr, 18, FName("Bold")));
+	WantedTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 18));
 	InfoBox->AddChildToVerticalBox(WantedTextBlock);
 
 	// --- Interaction prompt (bottom-center) ---
 	PromptTextBlock = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Prompt"));
-	PromptTextBlock->SetFont(FSlateFontInfo(nullptr, 24, FName("Bold")));
+	PromptTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 24));
 	PromptTextBlock->SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 0.9f, 1.0f));
 	UCanvasPanelSlot* PromptSlot = RootCanvas->AddChildToCanvas(PromptTextBlock);
 	PromptSlot->SetAnchors(FAnchors(0.5f, 1.0f, 0.5f, 1.0f));
@@ -91,7 +92,7 @@ void UNDHUDWidget::BuildProceduralHUD()
 	NotifSlot->SetAutoSize(true);
 
 	NotificationTextBlock = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Notification"));
-	NotificationTextBlock->SetFont(FSlateFontInfo(nullptr, 20));
+	NotificationTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 20));
 	NotificationTextBlock->SetColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.6f, 1.0f));
 	UBorder* NotifContent = NotificationBorder;
 	NotifContent->SetContent(NotificationTextBlock);
@@ -131,16 +132,16 @@ void UNDHUDWidget::SetInteractionPrompt(const FText& Text)
 	OnInteractionPromptChanged(Text);
 }
 
-void UNDHUDWidget::SetVehicleState(bool bInVehicleIn, const FText& VehicleName)
+void UNDHUDWidget::SetVehicleState(bool bVehicleActive, const FText& VehicleName)
 {
-	bInVehicle = bInVehicleIn;
-	if (bInVehicle && ObjectiveTextBlock)
+	bInVehicle = bVehicleActive;
+	if (bVehicleActive && ObjectiveTextBlock)
 	{
 		ObjectiveTextBlock->SetText(FText::Format(
 			FText::FromString(TEXT("Conduciendo: {0}   |   W acelerar · S frenar · A/D girar · Espacio freno de mano · F salir")),
 			VehicleName));
 	}
-	OnVehicleStateChanged(bInVehicleIn, VehicleName);
+	OnVehicleStateChanged(bVehicleActive, VehicleName);
 }
 
 void UNDHUDWidget::ShowNotification(const FText& Text)
@@ -180,7 +181,7 @@ void UNDHUDWidget::HandleWantedChanged(int32 NewLevel)
 
 void UNDHUDWidget::HandleMissionChanged(int32 NewStage)
 {
-	if (NDMissionSystem* Mission = GetGameInstance()->GetSubsystem<NDMissionSystem>())
+	if (UNDMissionSystem* Mission = GetGameInstance()->GetSubsystem<UNDMissionSystem>())
 	{
 		SetObjectiveText(Mission->GetObjectiveText());
 	}

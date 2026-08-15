@@ -51,8 +51,8 @@ public:
 	virtual FText GetInteractionPrompt_Implementation() const override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
-	bool Interact(APlayerController* Instigator);
-	virtual bool Interact_Implementation(APlayerController* Instigator) override;
+	bool Interact(APlayerController* PlayerController);
+	virtual bool Interact_Implementation(APlayerController* PlayerController) override;
 
 	/** Assigned by the spawner: police hold a post, mission NPCs patrol tight. */
 	UPROPERTY(EditAnywhere, Category = "NPC")
@@ -67,6 +67,7 @@ protected:
 
 private:
 	void NotifyHUD(const FText& Message);
+	AActor* FindMissionDelivery();
 
 	bool bPolice = false;
 	FString DisplayName = TEXT("Ciudadano");

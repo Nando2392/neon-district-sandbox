@@ -19,9 +19,9 @@ ANDNPCAIController::ANDNPCAIController()
 void ANDNPCAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	if (ACharacter* Character = Cast<ACharacter>(InPawn))
+	if (ACharacter* NPC = Cast<ACharacter>(InPawn))
 	{
-		if (UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement())
+		if (UCharacterMovementComponent* MoveComp = NPC->GetCharacterMovement())
 		{
 			MoveComp->MaxWalkSpeed = bPolice ? NDPerf::PoliceChaseSpeed * 0.6f : 170.0f;
 		}
@@ -35,9 +35,9 @@ void ANDNPCAIController::SetPatrolPoints(const TArray<FVector>& Points, bool bIn
 	Behavior = bPolice ? ENPNPCBehavior::ReturnToPatrol : ENPNPCBehavior::PatrolCivilian;
 	NextPatrolIndex = 0;
 
-	if (ACharacter* Character = Cast<ACharacter>(GetPawn()))
+	if (ACharacter* NPC = Cast<ACharacter>(GetPawn()))
 	{
-		if (UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement())
+		if (UCharacterMovementComponent* MoveComp = NPC->GetCharacterMovement())
 		{
 			MoveComp->MaxWalkSpeed = bPolice ? NDPerf::PoliceChaseSpeed * 0.6f : 170.0f;
 		}
@@ -97,7 +97,7 @@ void ANDNPCAIController::UpdatePatrol(float DeltaSeconds)
 	if (PatrolPoints.Num() == 0)
 	{
 		// Stand-in: wander around home.
-		FVector NavLocation;
+		FNavLocation NavLocation;
 		UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 		if (NavSys && NavSys->GetRandomReachablePointInRadius(GetPawn()->GetActorLocation(), 600.0f, NavLocation))
 		{

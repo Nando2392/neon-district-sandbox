@@ -47,7 +47,7 @@ void UNDWantedSystem::ClearWanted()
 	GetWorld()->GetTimerManager().ClearTimer(DecayTimerHandle);
 }
 
-void UNDWantedSystem::TickDecay(float /*DeltaSeconds*/)
+void UNDWantedSystem::TickDecay()
 {
 	if (!bEvading)
 	{

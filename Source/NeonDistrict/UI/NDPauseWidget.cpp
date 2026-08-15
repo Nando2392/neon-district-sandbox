@@ -6,6 +6,7 @@
 #include "Components/Border.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Styling/CoreStyle.h"
 #include "Blueprint/WidgetTree.h"
 #include "Kismet/GameplayStatics.h"
 #include "Input/Events.h"
@@ -52,14 +53,14 @@ void UNDPauseWidget::BuildLayout()
 
 	TitleText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_PauseTitle"));
 	TitleText->SetText(FText::FromString(TEXT("PAUSA")));
-	TitleText->SetFont(FSlateFontInfo(nullptr, 44, FName("Bold")));
+	TitleText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 44));
 	TitleText->SetColorAndOpacity(FLinearColor(0.35f, 0.9f, 1.0f, 1.0f));
 	Box->AddChildToVerticalBox(TitleText);
 
 	HintText = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_PauseHint"));
 	HintText->SetText(FText::FromString(
 		TEXT("ESC — reanudar\nM — menú principal\nF5 — guardar   F9 — cargar")));
-	HintText->SetFont(FSlateFontInfo(nullptr, 20));
+	HintText->SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 20));
 	HintText->SetColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.95f, 1.0f));
 	Box->AddChildToVerticalBox(HintText);
 }

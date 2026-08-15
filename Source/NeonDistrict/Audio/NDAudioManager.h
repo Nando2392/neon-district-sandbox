@@ -8,6 +8,7 @@
 
 class USoundBase;
 class UAudioComponent;
+class UNDSaveGame;
 
 /**
  * Audio manager (owned by the GameInstance). Bus layout by category with

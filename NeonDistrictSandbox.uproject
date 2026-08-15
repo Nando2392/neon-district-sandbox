@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.6",
+	"EngineAssociation": "5.8",
 	"Category": "Game",
 	"Description": "Neon District Sandbox - vertical slice de sandbox urbano third-person original (no GTA).",
 	"Modules": [
@@ -20,7 +20,7 @@
 			"Enabled": true
 		},
 		{
-			"Name": "ChaosVehicles",
+			"Name": "ChaosVehiclesPlugin",
 			"Enabled": true
 		},
 		{

@@ -9,7 +9,8 @@ public class NeonDistrictTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
-		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
+		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+		bOverrideBuildEnvironment = true;
 		ExtraModuleNames.Add("NeonDistrict");
 	}
 }

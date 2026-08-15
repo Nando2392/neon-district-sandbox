@@ -9,6 +9,10 @@ public class NeonDistrict : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		// Our module uses subfolder-relative includes ("Player/X.h"), so the
+		// module root must be on the include path (UBT only adds Source/).
+		PrivateIncludePaths.Add(ModuleDirectory);
+
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
 			"CoreUObject",
@@ -29,5 +33,15 @@ public class NeonDistrict : ModuleRules
 			"PhysicsCore",
 			"Chaos"
 		});
+
+		if (Target.bBuildEditor)
+		{
+			// Editor-only: NDCreateMapsCommandlet (blank-map generation) and
+			// UMaterialEditingLibrary (neon material graph construction).
+			PrivateDependencyModuleNames.AddRange(new string[] {
+				"UnrealEd",
+				"MaterialEditor"
+			});
+		}
 	}
 }

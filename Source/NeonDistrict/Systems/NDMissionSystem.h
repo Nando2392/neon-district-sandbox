@@ -16,7 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNDOnMissionStageChanged, int32, New
  * Stage changes are event-driven so HUD and save stay in sync.
  */
 UCLASS()
-class NEONDISTRICT_API NDMissionSystem : public UGameInstanceSubsystem
+class NEONDISTRICT_API UNDMissionSystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 

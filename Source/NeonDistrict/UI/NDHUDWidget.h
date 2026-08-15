@@ -34,7 +34,7 @@ public:
 	void SetInteractionPrompt(const FText& Text);
 
 	UFUNCTION(BlueprintCallable, Category = "HUD")
-	void SetVehicleState(bool bInVehicle, const FText& VehicleName);
+	void SetVehicleState(bool bVehicleActive, const FText& VehicleName);
 
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void ShowNotification(const FText& Text);
@@ -50,7 +50,7 @@ public:
 	void OnInteractionPromptChanged(const FText& Text);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD")
-	void OnVehicleStateChanged(bool bInVehicle, const FText& VehicleName);
+	void OnVehicleStateChanged(bool bVehicleActive, const FText& VehicleName);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD")
 	void OnNotification(const FText& Text);

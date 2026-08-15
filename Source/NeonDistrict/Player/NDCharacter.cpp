@@ -50,12 +50,12 @@ void ANDCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	// Movement is driven entirely from the controller's Enhanced Input actions.
 }
 
-void ANDCharacter::SetSprinting(bool bSprinting)
+void ANDCharacter::SetSprinting(bool bNewSprinting)
 {
-	this->bSprinting = bSprinting;
+	this->bSprinting = bNewSprinting;
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		MoveComp->MaxWalkSpeed = bSprinting ? NDPerf::SprintSpeed : NDPerf::RunSpeed;
+		MoveComp->MaxWalkSpeed = bNewSprinting ? NDPerf::SprintSpeed : NDPerf::RunSpeed;
 	}
 }
 

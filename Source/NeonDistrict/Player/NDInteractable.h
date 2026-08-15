@@ -11,7 +11,7 @@
  * Implementers return a prompt string and handle the interaction.
  */
 UINTERFACE(MinimalAPI, Blueprintable)
-class UNDInteractable : public UInterface
+class UNDIInteractable : public UInterface
 {
 	GENERATED_BODY()
 };

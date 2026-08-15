@@ -50,7 +50,7 @@ FText ANDNPCCharacter::GetInteractionPrompt_Implementation() const
 	}
 }
 
-bool ANDNPCCharacter::Interact_Implementation(APlayerController* Instigator)
+bool ANDNPCCharacter::Interact_Implementation(APlayerController* PlayerController)
 {
 	UNDMissionSystem* Mission = GetGameInstance()->GetSubsystem<UNDMissionSystem>();
 	if (!Mission)

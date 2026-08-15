@@ -2,14 +2,14 @@
 
 #include "Systems/NDMissionSystem.h"
 
-void NDMissionSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UNDMissionSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	MissionStage = 0;
 	ObjectiveText = FText::FromString(TEXT("Explora Neon District. Habla con Mei para un trabajo."));
 }
 
-void NDMissionSystem::AcceptMission(const FText& Objective, AActor* Target)
+void UNDMissionSystem::AcceptMission(const FText& Objective, AActor* Target)
 {
 	MissionStage = 1;
 	ObjectiveText = Objective;
@@ -17,7 +17,7 @@ void NDMissionSystem::AcceptMission(const FText& Objective, AActor* Target)
 	OnMissionStageChanged.Broadcast(MissionStage);
 }
 
-void NDMissionSystem::AdvanceMission(const FText& NewObjective, AActor* NewTarget)
+void UNDMissionSystem::AdvanceMission(const FText& NewObjective, AActor* NewTarget)
 {
 	if (MissionStage > 0 && MissionStage < 3)
 	{
@@ -28,7 +28,7 @@ void NDMissionSystem::AdvanceMission(const FText& NewObjective, AActor* NewTarge
 	OnMissionStageChanged.Broadcast(MissionStage);
 }
 
-void NDMissionSystem::CompleteMission()
+void UNDMissionSystem::CompleteMission()
 {
 	MissionStage = 3;
 	ObjectiveText = FText::FromString(TEXT("Entrega completada. ¡Neon District respira más tranquilo!"));
@@ -36,7 +36,7 @@ void NDMissionSystem::CompleteMission()
 	OnMissionStageChanged.Broadcast(MissionStage);
 }
 
-bool NDMissionSystem::GetMarkerLocation(FVector& OutLocation) const
+bool UNDMissionSystem::GetMarkerLocation(FVector& OutLocation) const
 {
 	if (CurrentTarget)
 	{
