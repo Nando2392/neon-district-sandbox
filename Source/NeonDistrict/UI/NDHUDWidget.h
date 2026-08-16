@@ -37,6 +37,9 @@ public:
 	void SetVehicleState(bool bVehicleActive, const FText& VehicleName);
 
 	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void SetWeaponState(bool bEquipped, int32 Ammo);
+
+	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void ShowNotification(const FText& Text);
 
 	// Editor-overridable presentation hooks (called after state changes).
@@ -75,6 +78,8 @@ private:
 	TObjectPtr<UTextBlock> WantedTextBlock = nullptr;
 	UPROPERTY()
 	TObjectPtr<UTextBlock> PromptTextBlock = nullptr;
+	UPROPERTY()
+	TObjectPtr<UTextBlock> WeaponTextBlock = nullptr;
 	UPROPERTY()
 	TObjectPtr<UTextBlock> NotificationTextBlock = nullptr;
 	UPROPERTY()

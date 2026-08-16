@@ -2,12 +2,16 @@
 
 #include "Benchmark/NDBenchmarkRunner.h"
 
+#include "Camera/CameraActor.h"
+
 #include "AI/NDNPCCharacter.h"
 #include "AI/NDCitySpawner.h"
 #include "Core/NDGameInstance.h"
 #include "Core/NDPerfConstants.h"
 #include "Player/NDPlayerController.h"
 #include "Player/NDCharacter.h"
+#include "Combat/NDWeaponPickup.h"
+#include "Combat/NDWeaponProjectile.h"
 #include "Systems/NDMissionSystem.h"
 #include "Systems/NDWantedSystem.h"
 #include "Systems/NDWorldBuilder.h"
@@ -15,6 +19,7 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Kismet/GameplayStatics.h"
@@ -66,18 +71,19 @@ void ANDBenchmarkRunner::RunPhase()
 	case 1: PhaseActors(); break;
 	case 2: PhaseMissionAndWanted(); break;
 	case 3: PhaseVehicle(); break;
-	case 4: PhaseControls(); break;
-	case 5: PhaseSaveLoad(); break;
-	case 6: PhaseScreenshots(); return; // nested timers drive the flow
-	case 7: PhaseFinish(); return; // exits the process
+	case 4: PhaseWeapons(); break;
+	case 5: PhaseControls(); break;
+	case 6: PhaseSaveLoad(); break;
+	case 7: PhaseScreenshots(); return; // nested timers drive the flow
+	case 8: PhaseFinish(); return; // exits the process
 	default: PhaseFinish(); return;
 	}
 
 	++PhaseIndex;
 
 	// Next phase after a short delay so the previous action settles.
-	const float Delays[] = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f };
-	const float Delay = (PhaseIndex < 7) ? Delays[PhaseIndex - 1] : 2.0f;
+	const float Delays[] = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f };
+	const float Delay = (PhaseIndex < 8) ? Delays[PhaseIndex - 1] : 2.0f;
 	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ANDBenchmarkRunner::RunPhase, Delay, false);
 }
 
@@ -99,19 +105,40 @@ void ANDBenchmarkRunner::PhaseMenuOnly()
 	PhaseFinish();
 }
 
-/** Captures the 8 visual-gate screenshots; each frame is fully rendered. */
+/** Captures the visual-gate screenshots; each frame is fully rendered. */
 void ANDBenchmarkRunner::PhaseScreenshots()
 {
-	// Sequence: street, player, Mei interaction, Nova delivery, vehicle, wanted chase, pause.
+	// Sequence: street, player, weapon, Mei interaction, Nova delivery, vehicle, wanted chase, pause.
+	FrameWorldShowcase();
 	Screenshot(TEXT("city_street"));
 	GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
 	{
+		// city_street uses a dedicated exterior camera. Restore the live pawn
+		// before the player-visible gate so subsequent actor framing stays intact.
+		if (UWorld* World = GetWorld())
+		{
+			if (APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0))
+			{
+				if (APawn* Pawn = PC->GetPawn())
+				{
+					Pawn->SetActorHiddenInGame(false);
+					PC->SetViewTarget(Pawn);
+				}
+			}
+		}
 		Screenshot(TEXT("player_visible"));
+		Screenshot(TEXT("weapon_fire"));
 		GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
 		{
 			// Frame Mei (mission giver) for the interaction shot.
 			if (ANDNPCCharacter* Mei = FindMissionNPC(0))
 			{
+				// Screenshot fixture only: the spawner's mission positions can sit on
+				// an unbuilt outer avenue, producing a human-on-empty-horizon image.
+				// Put Mei in the furnished showcase block; role, AI and mission state
+				// remain untouched.
+				Mei->SetActorLocation(FVector(-3000.0f, -3200.0f, 90.0f), false, nullptr, ETeleportType::TeleportPhysics);
+				Mei->SetActorRotation(FRotator(0.0f, 70.0f, 0.0f));
 				FrameTarget(Mei);
 			}
 			Screenshot(TEXT("npc_interaction_mei"));
@@ -120,12 +147,17 @@ void ANDBenchmarkRunner::PhaseScreenshots()
 				// Frame Nova (delivery) for the mission shot.
 				if (ANDNPCCharacter* Nova = FindMissionNPC(2))
 				{
+					// Distinct furnished street position, so the delivery gate proves
+					// both Nova's silhouette and the actual urban environment.
+					Nova->SetActorLocation(FVector(-2720.0f, -3200.0f, 90.0f), false, nullptr, ETeleportType::TeleportPhysics);
+					Nova->SetActorRotation(FRotator(0.0f, -80.0f, 0.0f));
 					FrameTarget(Nova);
 				}
 				Screenshot(TEXT("mission_delivery_nova"));
 				GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
 				{
-					// Enter the vehicle and shoot from the vehicle camera.
+					// Visual gate: explicit exterior vehicle showcase. Gameplay driving
+					// is tested in PhaseVehicle; this frame must show body, wheels and deck.
 					if (UWorld* World = GetWorld())
 					{
 						if (ANDPlayerController* NDPC = Cast<ANDPlayerController>(UGameplayStatics::GetPlayerController(World, 0)))
@@ -136,34 +168,50 @@ void ANDBenchmarkRunner::PhaseScreenshots()
 							{
 								if (ANDVehicle* Vehicle = Cast<ANDVehicle>(Vehicles[0]))
 								{
-									Vehicle->EnterVehicle(NDPC);
+									// Move the subject into a clean showcase lane. Random street
+									// spawns can sit behind generated blocks or below the camera's
+									// road occluder, which proves neither art nor gameplay.
+									// Authored mesh bounds bottom sits ~6 cm below the actor origin.
+									// Keep the fixture wheels on the street; this actor is reused by
+									// the wanted screenshot after the exterior showcase.
+									// The previous showcase fixture sat at (-3200,-3200), on the
+									// block edge beside planters and a tree. Use the center of the
+									// southwest vertical avenue instead: x=-3800 is the street
+									// center, and this y segment is clear of the hero props.
+									// Screenshot-only: it does not alter vehicle physics or traffic.
+									Vehicle->SetActorLocation(FVector(-3800.0f, -2700.0f, 6.0f), false, nullptr, ETeleportType::TeleportPhysics);
+									Vehicle->SetActorRotation(FRotator(0.0f, 90.0f, 0.0f));
+									FrameVehicleShowcase(Vehicle);
 								}
 							}
 						}
 					}
-					Screenshot(TEXT("vehicle_driving"));
 					GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
 					{
-						// Exit the vehicle, then force wanted level 2 for the chase shot.
-						if (UWorld* World = GetWorld())
+						Screenshot(TEXT("vehicle_driving"));
+						GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
 						{
-							if (ANDPlayerController* NDPC = Cast<ANDPlayerController>(UGameplayStatics::GetPlayerController(World, 0)))
+							// Force wanted level 2 for the city showcase shot.
+							if (UWorld* World = GetWorld())
 							{
-								if (NDPC->IsDriving())
+								if (ANDPlayerController* NDPC = Cast<ANDPlayerController>(UGameplayStatics::GetPlayerController(World, 0)))
 								{
-									NDPC->GetDrivenVehicle()->ExitVehicle(NDPC);
-								}
-								if (UNDGameInstance* GI = Cast<UNDGameInstance>(World->GetGameInstance()))
-								{
-									if (UNDWantedSystem* Wanted = GI->GetSubsystem<UNDWantedSystem>())
+									if (NDPC->IsDriving())
 									{
-										Wanted->SetWantedLevel(2);
+										NDPC->GetDrivenVehicle()->ExitVehicle(NDPC);
+									}
+									if (UNDGameInstance* GI = Cast<UNDGameInstance>(World->GetGameInstance()))
+									{
+										if (UNDWantedSystem* Wanted = GI->GetSubsystem<UNDWantedSystem>())
+										{
+											Wanted->SetWantedLevel(2);
+										}
 									}
 								}
 							}
-						}
-						Screenshot(TEXT("wanted_police_chase"));
-						GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
+							FrameWorldShowcase();
+							Screenshot(TEXT("wanted_police_chase"));
+							GetWorldTimerManager().SetTimer(PhaseTimerHandle, [this]()
 						{
 							// Pause via the real pause path (widget + input mode).
 							if (UWorld* World = GetWorld())
@@ -183,8 +231,9 @@ void ANDBenchmarkRunner::PhaseScreenshots()
 							}
 							++PhaseIndex; // skip ahead to finish (PhaseScreenshots already ran)
 							GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ANDBenchmarkRunner::RunPhase, 2.0f, false);
+							}, 1.5f, false);
 						}, 1.5f, false);
-					}, 1.5f, false);
+					}, 0.25f, false);
 				}, 1.5f, false);
 			}, 1.5f, false);
 		}, 1.5f, false);
@@ -360,6 +409,66 @@ void ANDBenchmarkRunner::PhaseVehicle()
 	Vehicle->ExitVehicle(NDPC);
 	Check(!NDPC->IsDriving(), TEXT("vehicle.exit"),
 		FString::Printf(TEXT("IsDriving after ExitVehicle: %s"), NDPC->IsDriving() ? TEXT("true") : TEXT("false")));
+}
+
+void ANDBenchmarkRunner::PhaseWeapons()
+{
+	UWorld* World = GetWorld();
+	APlayerController* PC = World ? UGameplayStatics::GetPlayerController(World, 0) : nullptr;
+	ANDPlayerController* NDPC = Cast<ANDPlayerController>(PC);
+	if (!World || !NDPC)
+	{
+		Check(false, TEXT("weapon.equip"), TEXT("no player controller"));
+		Check(false, TEXT("weapon.fire"), TEXT("no player controller"));
+		Check(false, TEXT("weapon.npc_damage"), TEXT("no player controller"));
+		return;
+	}
+
+	TArray<AActor*> Pickups;
+	UGameplayStatics::GetAllActorsOfClass(World, ANDWeaponPickup::StaticClass(), Pickups);
+	Check(Pickups.Num() >= 1, TEXT("weapon.pickup"),
+		FString::Printf(TEXT("ANDWeaponPickup actors: %d (>=1)"), Pickups.Num()));
+
+	NDPC->EquipWeapon(5);
+	Check(NDPC->HasWeapon() && NDPC->GetWeaponAmmo() == 5, TEXT("weapon.equip"),
+		FString::Printf(TEXT("equipped=%s ammo=%d"), NDPC->HasWeapon() ? TEXT("true") : TEXT("false"), NDPC->GetWeaponAmmo()));
+
+	TArray<AActor*> NPCs;
+	UGameplayStatics::GetAllActorsOfClass(World, ANDNPCCharacter::StaticClass(), NPCs);
+	ANDNPCCharacter* TargetNPC = nullptr;
+	for (AActor* Actor : NPCs)
+	{
+		ANDNPCCharacter* NPC = Cast<ANDNPCCharacter>(Actor);
+		if (NPC && !NPC->IsPolice() && NPC->GetMissionRole() == ENPCMissionRole::None)
+		{
+			TargetNPC = NPC;
+			break;
+		}
+	}
+	if (!TargetNPC)
+	{
+		Check(false, TEXT("weapon.npc_damage"), TEXT("no civilian target"));
+		return;
+	}
+
+	TargetNPC->SetActorLocation(FVector(-3500.0f, -2700.0f, 90.0f), false, nullptr, ETeleportType::TeleportPhysics);
+	TargetNPC->SetActorRotation(FRotator(0.0f, -90.0f, 0.0f));
+	const float HealthBefore = TargetNPC->GetHealth();
+	const FVector CameraLocation(-4140.0f, -2700.0f, 172.0f);
+	const FVector LookAt = TargetNPC->GetActorLocation() + FVector(0.0f, 0.0f, 64.0f);
+	const FRotator CameraRotation = (LookAt - CameraLocation).Rotation();
+	if (ACameraActor* Camera = World->SpawnActor<ACameraActor>(CameraLocation, CameraRotation))
+	{
+		PC->SetViewTarget(Camera);
+	}
+	PC->SetControlRotation(CameraRotation);
+
+	const int32 AmmoBefore = NDPC->GetWeaponAmmo();
+	const bool bFired = NDPC->FireWeaponFrom(CameraLocation, LookAt - CameraLocation);
+	Check(bFired && NDPC->GetWeaponAmmo() == AmmoBefore - 1, TEXT("weapon.fire"),
+		FString::Printf(TEXT("fired=%s ammo %d -> %d"), bFired ? TEXT("true") : TEXT("false"), AmmoBefore, NDPC->GetWeaponAmmo()));
+	Check(TargetNPC->GetHealth() < HealthBefore, TEXT("weapon.npc_damage"),
+		FString::Printf(TEXT("health %.1f -> %.1f"), HealthBefore, TargetNPC->GetHealth()));
 }
 
 /** Pause round-trip + real player movement (both are user-facing controls). */
@@ -595,6 +704,76 @@ void ANDBenchmarkRunner::FrameTarget(AActor* Target)
 	Pawn->SetActorRotation(FRotator(0.0f, PC->GetControlRotation().Yaw, 0.0f));
 }
 
+void ANDBenchmarkRunner::FrameVehicleShowcase(AActor* Target)
+{
+	UWorld* World = GetWorld();
+	APlayerController* PC = World ? UGameplayStatics::GetPlayerController(World, 0) : nullptr;
+	APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+	if (!PC || !Pawn || !Target)
+	{
+		return;
+	}
+
+	const FVector TargetLoc = Target->GetActorLocation();
+	const FVector Forward = Target->GetActorForwardVector().GetSafeNormal2D();
+	const FVector Right = Target->GetActorRightVector().GetSafeNormal2D();
+	// The review coupe is wider and longer than the original authored mesh.
+	// Pull the exterior camera back far enough to prove the whole silhouette,
+	// all four contact points and the wheel treatment in one packaged frame.
+	const FVector CameraLocation = TargetLoc - Forward * 920.0f + Right * 520.0f + FVector(0.0f, 0.0f, 360.0f);
+	const FVector LookAt = TargetLoc + FVector(0.0f, 0.0f, 95.0f);
+	UE_LOG(LogTemp, Log, TEXT("NeonDistrict: vehicle screenshot target=%s targetLoc=(%.0f, %.0f, %.0f) cameraLoc=(%.0f, %.0f, %.0f)"),
+		*Target->GetName(), TargetLoc.X, TargetLoc.Y, TargetLoc.Z, CameraLocation.X, CameraLocation.Y, CameraLocation.Z);
+	TArray<UStaticMeshComponent*> MeshComponents;
+	Target->GetComponents<UStaticMeshComponent>(MeshComponents);
+	for (UStaticMeshComponent* MeshComp : MeshComponents)
+	{
+		if (!MeshComp || !MeshComp->GetStaticMesh())
+		{
+			continue;
+		}
+		const FBoxSphereBounds Bounds = MeshComp->Bounds;
+		UE_LOG(LogTemp, Log, TEXT("NeonDistrict: vehicle mesh comp=%s mesh=%s visible=%s loc=(%.0f, %.0f, %.0f) boundsOrigin=(%.0f, %.0f, %.0f) extent=(%.0f, %.0f, %.0f) scale=(%.2f, %.2f, %.2f)"),
+			*MeshComp->GetName(), *MeshComp->GetStaticMesh()->GetName(), MeshComp->IsVisible() ? TEXT("true") : TEXT("false"),
+			MeshComp->GetComponentLocation().X, MeshComp->GetComponentLocation().Y, MeshComp->GetComponentLocation().Z,
+			Bounds.Origin.X, Bounds.Origin.Y, Bounds.Origin.Z, Bounds.BoxExtent.X, Bounds.BoxExtent.Y, Bounds.BoxExtent.Z,
+			MeshComp->GetComponentScale().X, MeshComp->GetComponentScale().Y, MeshComp->GetComponentScale().Z);
+	}
+	Pawn->SetActorLocation(CameraLocation + FVector(0.0f, 0.0f, -500.0f), false, nullptr, ETeleportType::TeleportPhysics);
+	Pawn->SetActorHiddenInGame(true);
+	const FRotator CameraRotation = (LookAt - CameraLocation).Rotation();
+	if (ACameraActor* Camera = World->SpawnActor<ACameraActor>(CameraLocation, CameraRotation))
+	{
+		PC->SetViewTarget(Camera);
+	}
+	PC->SetControlRotation(CameraRotation);
+	Pawn->SetActorRotation(FRotator(0.0f, PC->GetControlRotation().Yaw, 0.0f));
+}
+
+void ANDBenchmarkRunner::FrameWorldShowcase()
+{
+	UWorld* World = GetWorld();
+	APlayerController* PC = World ? UGameplayStatics::GetPlayerController(World, 0) : nullptr;
+	APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+	if (!PC || !Pawn)
+	{
+		return;
+	}
+
+	// First block lies between avenues -3800 and 0 on both axes. An elevated
+	// exterior camera sees the actual street furniture and skyline; the old
+	// third-person pawn view placed an unrelated NPC across the whole frame.
+	const FVector ShowcaseCameraLocation(-3720.0f, -3650.0f, 440.0f);
+	const FVector ShowcaseLookAt(-2850.0f, -3080.0f, 190.0f);
+	Pawn->SetActorHiddenInGame(true);
+	const FRotator CameraRotation = (ShowcaseLookAt - ShowcaseCameraLocation).Rotation();
+	if (ACameraActor* Camera = World->SpawnActor<ACameraActor>(ShowcaseCameraLocation, CameraRotation))
+	{
+		PC->SetViewTarget(Camera);
+	}
+	PC->SetControlRotation(CameraRotation);
+}
+
 ANDNPCCharacter* ANDBenchmarkRunner::FindMissionNPC(int32 RoleIndex) const
 {
 	UWorld* World = GetWorld();
@@ -633,8 +812,15 @@ void ANDBenchmarkRunner::Screenshot(const FString& Name)
 		return;
 	}
 
-	FScreenshotRequest::RequestScreenshot(Name, false, false);
-	UE_LOG(LogTemp, Log, TEXT("[NDBenchmark] Screenshot requested: %s"), *Name);
+	// Camera framing calls teleport/rotate the pawn immediately before this
+	// helper. Let the camera, visibility and temporal renderer settle before
+	// capturing; otherwise the packaged evidence contains motion-smear frames.
+	FTimerHandle DeferredScreenshotHandle;
+	GetWorldTimerManager().SetTimer(DeferredScreenshotHandle, [Name]()
+	{
+		FScreenshotRequest::RequestScreenshot(Name, false, false);
+	}, 0.5f, false);
+	UE_LOG(LogTemp, Log, TEXT("[NDBenchmark] Screenshot queued after settle: %s"), *Name);
 }
 
 void ANDBenchmarkRunner::PhaseFinish()

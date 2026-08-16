@@ -17,10 +17,14 @@
 #include "InputMappingContext.h"
 #include "Engine/World.h"
 #include "Components/InputComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/Character.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/NDInteractable.h"
+#include "Combat/NDWeaponProjectile.h"
+#include "Systems/NDWantedSystem.h"
+#include "Audio/NDAudioManager.h"
 
 ANDPlayerController::ANDPlayerController()
 {
@@ -112,6 +116,9 @@ bool ANDPlayerController::TrySetupEnhancedInput()
 	IA_QuickLoad = NewObject<UInputAction>(this, FName("IA_QuickLoad"));
 	if (IA_QuickLoad) IA_QuickLoad->ValueType = EInputActionValueType::Boolean;
 
+	IA_Fire = NewObject<UInputAction>(this, FName("IA_Fire"));
+	if (IA_Fire) IA_Fire->ValueType = EInputActionValueType::Boolean;
+
 	// Add to local player subsystem
 	ULocalPlayer* LP = GetLocalPlayer();
 	if (LP)
@@ -147,6 +154,7 @@ void ANDPlayerController::BindEnhancedInput(UEnhancedInputComponent* EIC)
 	EIC->BindAction(IA_Pause, ETriggerEvent::Started, this, &ANDPlayerController::HandlePause);
 	EIC->BindAction(IA_QuickSave, ETriggerEvent::Started, this, &ANDPlayerController::HandleQuickSave);
 	EIC->BindAction(IA_QuickLoad, ETriggerEvent::Started, this, &ANDPlayerController::HandleQuickLoad);
+	EIC->BindAction(IA_Fire, ETriggerEvent::Started, this, &ANDPlayerController::HandleFire);
 
 	SetupInputMappings();
 }
@@ -177,6 +185,7 @@ void ANDPlayerController::SetupInputMappings()
 	InputContext->MapKey(IA_Pause, EKeys::Escape);
 	InputContext->MapKey(IA_QuickSave, EKeys::F5);
 	InputContext->MapKey(IA_QuickLoad, EKeys::F9);
+	InputContext->MapKey(IA_Fire, EKeys::LeftMouseButton);
 }
 
 void ANDPlayerController::SetupFallbackInput()
@@ -197,6 +206,7 @@ void ANDPlayerController::SetupFallbackInput()
 	InputComponent->BindAction("Pause", IE_Pressed, this, &ANDPlayerController::HandlePause);
 	InputComponent->BindAction("QuickSave", IE_Pressed, this, &ANDPlayerController::HandleQuickSave);
 	InputComponent->BindAction("QuickLoad", IE_Pressed, this, &ANDPlayerController::HandleQuickLoad);
+	InputComponent->BindAction("Fire", IE_Pressed, this, &ANDPlayerController::HandleFire);
 }
 
 void ANDPlayerController::Tick(float DeltaSeconds)
@@ -438,6 +448,123 @@ void ANDPlayerController::HandleQuickLoad()
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("No GameInstance para cargar"));
 	}
+}
+
+void ANDPlayerController::EquipWeapon(int32 InitialAmmo)
+{
+	bWeaponEquipped = true;
+	WeaponAmmo = FMath::Max(InitialAmmo, WeaponAmmo);
+	if (!PlayerCharacter)
+	{
+		PlayerCharacter = Cast<ANDCharacter>(GetPawn());
+	}
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->SetWeaponVisible(true);
+	}
+	if (HUDWidget)
+	{
+		HUDWidget->SetWeaponState(true, WeaponAmmo);
+		HUDWidget->ShowNotification(FText::FromString(TEXT("Blaster urbano equipado — Mouse izquierdo para disparar")));
+	}
+}
+
+void ANDPlayerController::HandleFire()
+{
+	FireWeapon();
+}
+
+bool ANDPlayerController::FireWeapon()
+{
+	if (!bWeaponEquipped || WeaponAmmo <= 0 || bIsDriving)
+	{
+		return false;
+	}
+	UWorld* World = GetWorld();
+	APawn* ControlledPawn = GetPawn();
+	if (!World || !ControlledPawn || !PlayerCameraManager)
+	{
+		return false;
+	}
+
+	return FireWeaponFrom(PlayerCameraManager->GetCameraLocation(), PlayerCameraManager->GetCameraRotation().Vector());
+}
+
+bool ANDPlayerController::FireWeaponFrom(const FVector& Origin, const FVector& DirectionIn)
+{
+	if (!bWeaponEquipped || WeaponAmmo <= 0 || bIsDriving)
+	{
+		return false;
+	}
+	UWorld* World = GetWorld();
+	APawn* ControlledPawn = GetPawn();
+	if (!World || !ControlledPawn)
+	{
+		return false;
+	}
+
+	const FVector Direction = DirectionIn.GetSafeNormal();
+	const FVector TraceEnd = Origin + Direction * 6500.0f;
+	FHitResult Hit;
+	FCollisionQueryParams Params(FName(TEXT("ND_WeaponFire")), /*bTraceComplex=*/false);
+	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(ControlledPawn);
+	FCollisionObjectQueryParams PawnObjects;
+	PawnObjects.AddObjectTypesToQuery(ECC_Pawn);
+	bool bHit = World->LineTraceSingleByObjectType(Hit, Origin, TraceEnd, PawnObjects, Params);
+	if (!bHit)
+	{
+		bHit = World->LineTraceSingleByChannel(Hit, Origin, TraceEnd, ECC_Visibility, Params);
+	}
+	if (bHit && Hit.GetActor())
+	{
+		UGameplayStatics::ApplyPointDamage(Hit.GetActor(), 34.0f, Direction, Hit,
+			GetInstigatorController(), ControlledPawn, nullptr);
+		if (UPrimitiveComponent* HitComp = Hit.GetComponent())
+		{
+			if (HitComp->IsSimulatingPhysics())
+			{
+				HitComp->AddImpulseAtLocation(Direction * 65000.0f, Hit.ImpactPoint);
+			}
+		}
+		if (ACharacter* HitCharacter = Cast<ACharacter>(Hit.GetActor()))
+		{
+			HitCharacter->LaunchCharacter(Direction.GetSafeNormal2D() * 260.0f + FVector(0.0f, 0.0f, 70.0f), true, true);
+		}
+		UE_LOG(LogTemp, Log, TEXT("NeonDistrict: weapon hitscan hit actor=%s at=(%.0f,%.0f,%.0f)"),
+			*Hit.GetActor()->GetName(), Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z);
+	}
+	const FVector ProjectileSpawnLocation = Origin + Direction * 120.0f + FVector(0.0f, 0.0f, -18.0f);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = ControlledPawn;
+	SpawnParams.Instigator = ControlledPawn;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ANDWeaponProjectile* Projectile = World->SpawnActor<ANDWeaponProjectile>(ANDWeaponProjectile::StaticClass(),
+		ProjectileSpawnLocation, Direction.Rotation(), SpawnParams);
+	if (!Projectile)
+	{
+		return false;
+	}
+	Projectile->Launch(Direction, ControlledPawn);
+	--WeaponAmmo;
+	if (HUDWidget)
+	{
+		HUDWidget->SetWeaponState(true, WeaponAmmo);
+	}
+	if (UNDGameInstance* GI = GetGameInstance<UNDGameInstance>())
+	{
+		if (UNDAudioManager* Audio = GI->GetAudioManager())
+		{
+			Audio->PlayAlert();
+		}
+		if (UNDWantedSystem* Wanted = GI->GetSubsystem<UNDWantedSystem>())
+		{
+			Wanted->ReportDetection(0.45f);
+		}
+	}
+	UE_LOG(LogTemp, Log, TEXT("NeonDistrict: weapon fired ammo=%d projectile=%s"), WeaponAmmo, *Projectile->GetName());
+	return true;
 }
 
 void ANDPlayerController::UpdateInteractionTarget()

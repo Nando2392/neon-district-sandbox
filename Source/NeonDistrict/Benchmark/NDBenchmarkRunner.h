@@ -43,6 +43,7 @@ private:
 	void PhaseActors();
 	void PhaseMissionAndWanted();
 	void PhaseVehicle();
+	void PhaseWeapons();
 	void PhaseControls();
 	void PhaseSaveLoad();
 	void PhaseScreenshots();
@@ -57,6 +58,10 @@ private:
 
 	/** Point the player camera at an actor and park the pawn near it. */
 	void FrameTarget(AActor* Target);
+	/** Exterior three-quarter vehicle shot that does not let the pawn cover the car. */
+	void FrameVehicleShowcase(AActor* Target);
+	/** Deterministic street-level shot aimed at a populated district block. */
+	void FrameWorldShowcase();
 
 	/** Find the mission NPC with the given role (giver=Mei, delivery=Nova). */
 	ANDNPCCharacter* FindMissionNPC(int32 RoleIndex) const;

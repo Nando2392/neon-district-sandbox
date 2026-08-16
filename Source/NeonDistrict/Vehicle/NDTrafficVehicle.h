@@ -35,6 +35,18 @@ public:
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Traffic")
 	TObjectPtr<UStaticMeshComponent> Mesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Traffic")
+	TObjectPtr<UStaticMeshComponent> CabinMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Traffic")
+	TObjectPtr<UStaticMeshComponent> LightMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Traffic")
+	TObjectPtr<UStaticMeshComponent> WheelFL = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Traffic")
+	TObjectPtr<UStaticMeshComponent> WheelFR = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Traffic")
+	TObjectPtr<UStaticMeshComponent> WheelRL = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Traffic")
+	TObjectPtr<UStaticMeshComponent> WheelRR = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<USplineComponent> Route = nullptr;

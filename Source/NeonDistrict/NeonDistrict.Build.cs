@@ -20,6 +20,7 @@ public class NeonDistrict : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"ChaosVehicles",
+			"ProceduralMeshComponent",
 			"Niagara",
 			"UMG",
 			"Slate",

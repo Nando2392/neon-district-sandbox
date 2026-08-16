@@ -14,6 +14,12 @@
 			]
 		}
 	],
+	"AdditionalAssetDirectoriesToCook": [
+		"/Engine/Content/EngineMaterials",
+		"/Engine/Content/BasicShapes",
+		"/Engine/Content/Tutorial",
+		"C:/Users/fjmn2/Dev/neon-district-sandbox/Content/Generated"
+	],
 	"Plugins": [
 		{
 			"Name": "EnhancedInput",
@@ -21,6 +27,10 @@
 		},
 		{
 			"Name": "ChaosVehiclesPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "ProceduralMeshComponent",
 			"Enabled": true
 		},
 		{
@@ -36,6 +46,13 @@
 		},
 		{
 			"Name": "GeometryScripting",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "PythonScriptPlugin",
 			"Enabled": true,
 			"TargetAllowList": [
 				"Editor"

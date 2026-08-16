@@ -9,8 +9,10 @@
 
 class UChaosWheeledVehicleMovementComponent;
 class UStaticMeshComponent;
+class USceneComponent;
 class UCameraComponent;
 class USpringArmComponent;
+class UProceduralMeshComponent;
 class APlayerController;
 
 /**
@@ -57,7 +59,53 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<USceneComponent> VehicleRoot = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
 	TObjectPtr<UStaticMeshComponent> BodyMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> AuthoredBodyMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UProceduralMeshComponent> BodyVisualMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> CabinMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> WindshieldMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> SpoilerMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> FrontLightMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> RearLightMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> TrunkDeckMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> RearBumperMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> HoodMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> NoseMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> IntakeLeftMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> IntakeRightMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> FrontSplitterMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> SideSkirtMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> RearDiffuserMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> MirrorLeftMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> MirrorRightMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> WheelFL = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> WheelFR = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> WheelRL = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<UStaticMeshComponent> WheelRR = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> VehicleMovement = nullptr;
@@ -79,6 +127,7 @@ protected:
 	TObjectPtr<APawn> PreviousPawn = nullptr;
 
 private:
+	void BuildOriginalBodyVisual();
 	void EnsureWheels();
 	float LastImpactTime = -10.0f;
 	static constexpr float ImpactCooldown = 0.6f;

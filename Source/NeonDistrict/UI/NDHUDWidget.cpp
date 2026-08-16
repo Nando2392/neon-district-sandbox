@@ -71,6 +71,12 @@ void UNDHUDWidget::BuildProceduralHUD()
 	WantedTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 18));
 	InfoBox->AddChildToVerticalBox(WantedTextBlock);
 
+	WeaponTextBlock = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Weapon"));
+	WeaponTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 18));
+	WeaponTextBlock->SetColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.8f, 1.0f));
+	WeaponTextBlock->SetText(FText::FromString(TEXT("Sin arma")));
+	InfoBox->AddChildToVerticalBox(WeaponTextBlock);
+
 	// --- Interaction prompt (bottom-center) ---
 	PromptTextBlock = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ND_Prompt"));
 	PromptTextBlock->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 24));
@@ -142,6 +148,19 @@ void UNDHUDWidget::SetVehicleState(bool bVehicleActive, const FText& VehicleName
 			VehicleName));
 	}
 	OnVehicleStateChanged(bVehicleActive, VehicleName);
+}
+
+void UNDHUDWidget::SetWeaponState(bool bEquipped, int32 Ammo)
+{
+	if (WeaponTextBlock)
+	{
+		WeaponTextBlock->SetText(bEquipped
+			? FText::FromString(FString::Printf(TEXT("Blaster urbano: %d"), Ammo))
+			: FText::FromString(TEXT("Sin arma")));
+		WeaponTextBlock->SetColorAndOpacity(bEquipped
+			? FLinearColor(0.10f, 0.95f, 1.0f, 1.0f)
+			: FLinearColor(0.7f, 0.7f, 0.8f, 1.0f));
+	}
 }
 
 void UNDHUDWidget::ShowNotification(const FText& Text)

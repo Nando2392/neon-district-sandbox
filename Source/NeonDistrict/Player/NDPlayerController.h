@@ -10,6 +10,7 @@ class UInputMappingContext;
 class UInputAction;
 class ANDCharacter;
 class ANDVehicle;
+class ANDWeaponProjectile;
 class UUserWidget;
 class AActor;
 
@@ -45,6 +46,20 @@ public:
 	UFUNCTION(BlueprintPure, Category = "HUD")
 	UNDHUDWidget* GetHUDWidget() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void EquipWeapon(int32 InitialAmmo = 24);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	bool FireWeapon();
+
+	bool FireWeaponFrom(const FVector& Origin, const FVector& Direction);
+
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	bool HasWeapon() const { return bWeaponEquipped; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	int32 GetWeaponAmmo() const { return WeaponAmmo; }
+
 	/** Toggle pause + pause widget (Escape). */
 	void HandlePause();
 
@@ -71,6 +86,7 @@ private:
 	void HandleEnterExitVehicle();
 	void HandleQuickSave();
 	void HandleQuickLoad();
+	void HandleFire();
 
 	// --- Fallback classical Input (for builds without Enhanced Input assets) ---
 	void SetupFallbackInput();
@@ -108,6 +124,8 @@ private:
 	TObjectPtr<UInputAction> IA_QuickSave = nullptr;
 	UPROPERTY()
 	TObjectPtr<UInputAction> IA_QuickLoad = nullptr;
+	UPROPERTY()
+	TObjectPtr<UInputAction> IA_Fire = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<ANDCharacter> PlayerCharacter = nullptr;
@@ -128,4 +146,6 @@ private:
 	bool bUsingFallback = false;
 
 	bool bIsDriving = false;
+	bool bWeaponEquipped = false;
+	int32 WeaponAmmo = 0;
 };

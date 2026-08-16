@@ -45,6 +45,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "NPC")
 	ENPCMissionRole GetMissionRole() const { return MissionRole; }
 
+	UFUNCTION(BlueprintPure, Category = "NPC|Combat")
+	float GetHealth() const { return Health; }
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator, AActor* DamageCauser) override;
+
 	// INDIInteractable
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	FText GetInteractionPrompt() const;
@@ -64,6 +70,28 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
 	TObjectPtr<UStaticMeshComponent> NPCVisual = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCHead = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCHair = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCLeftArm = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCRightArm = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCLeftHand = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCRightHand = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCLeftLeg = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCRightLeg = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCLeftFoot = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCRightFoot = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "NPC|Visual")
+	TObjectPtr<UStaticMeshComponent> NPCAccessory = nullptr;
 
 private:
 	void NotifyHUD(const FText& Message);
@@ -73,4 +101,5 @@ private:
 	FString DisplayName = TEXT("Ciudadano");
 	ENPCMissionRole MissionRole = ENPCMissionRole::None;
 	int32 DialogueLine = 0;
+	float Health = 100.0f;
 };

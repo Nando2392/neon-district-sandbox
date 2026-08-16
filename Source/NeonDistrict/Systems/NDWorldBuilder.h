@@ -9,6 +9,8 @@
 class UMaterial;
 class UMaterialInstanceDynamic;
 class USceneComponent;
+class UStaticMesh;
+class UTexture2D;
 
 /**
  * Procedural city builder. Constructs the whole Neon District on BeginPlay:
@@ -65,6 +67,14 @@ private:
 	void BuildBuilding(FVector Center, FVector Extent, int32 PaletteIndex);
 	void BuildStreetLight(FVector Location, float Height);
 	void BuildSign(FVector Location, const FLinearColor& Color);
+	void BuildCrosswalk(FVector Center, bool bAcrossVerticalStreet);
+	void BuildBench(FVector Location, float YawDegrees);
+	void BuildTrafficSignal(FVector Location, float YawDegrees);
+	void BuildRoadSign(FVector Location, const FLinearColor& Color, float YawDegrees);
+	void BuildBarrierCones(FVector Location, float YawDegrees);
+	void BuildUrbanTree(FVector Location, float Scale = 1.0f);
+	void BuildPlanter(FVector Location, float YawDegrees = 0.0f);
+	void BuildPoliceCruiserProp(FVector Location, float YawDegrees);
 	void BuildGarbage(FVector Location);
 	void BuildHydrant(FVector Location);
 	void BuildKiosk(FVector Location);
@@ -84,8 +94,20 @@ public:
 	// Materials
 	UMaterial* CreateNeonMaterial();
 	UMaterialInstanceDynamic* MakeMID(UMaterial* Base, const FLinearColor& Color, float EmissiveStrength);
+	UTexture2D* CreateFacadeTexture(const FLinearColor& WallColor, const FLinearColor& LitWindowColor,
+		int32 Seed, int32 Width = 192, int32 Height = 256);
 	UMaterial* NeonMat = nullptr;
 	UMaterial* MatteMat = nullptr;
+	// CDO hard reference: keeps the locally authored asphalt asset reachable by
+	// the cooker even though streets are constructed dynamically at runtime.
+	UPROPERTY()
+	TObjectPtr<UMaterial> AsphaltMat = nullptr;
+	// Separate concrete paving surface; retained as a CDO reference for cooking.
+	UPROPERTY()
+	TObjectPtr<UMaterial> SidewalkMat = nullptr;
+	// Original Blender tree; a hard reference guarantees packaged cooking.
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> UrbanTreeMesh = nullptr;
 
 	UStaticMeshComponent* AddBox(FVector Location, FVector Scale, const FLinearColor& Color, float Emissive,
 		UMaterial* MaterialOverride = nullptr, FVector RelativeRotation = FVector::ZeroVector);
@@ -102,4 +124,9 @@ public:
 	TArray<FNeonPalette> Palette;
 
 	TArray<TObjectPtr<UStaticMeshComponent>> BuildComponents;
+
+	// Runtime-created facade textures must stay referenced for the lifetime of
+	// the district; otherwise GC can remove a texture still bound to a MID.
+	UPROPERTY()
+	TArray<TObjectPtr<UTexture2D>> RuntimeFacadeTextures;
 };
