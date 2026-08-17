@@ -14,8 +14,8 @@
 
 namespace
 {
-	const TCHAR* SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
-	const TCHAR* BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
+	const TCHAR* WeaponProjectile_SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* WeaponProjectile_BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 }
 
 ANDWeaponProjectile::ANDWeaponProjectile()
@@ -43,11 +43,11 @@ void ANDWeaponProjectile::BeginPlay()
 	Super::BeginPlay();
 	Collision->OnComponentHit.AddDynamic(this, &ANDWeaponProjectile::HandleHit);
 
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, SphereMeshPath))
+	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, WeaponProjectile_SphereMeshPath))
 	{
 		Visual->SetStaticMesh(Sphere);
 	}
-	if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+	if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, WeaponProjectile_BasicShapeMatPath))
 	{
 		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Mat, this);
 		MID->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.10f, 0.85f, 1.0f));

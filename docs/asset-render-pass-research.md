@@ -123,3 +123,55 @@ exit o las pruebas de ruedas.
 - Blender Manual 5.2, Render Baking.
 - Kenney, Blaster Kit: página fuente reporta **Creative Commons CC0**, categoría 3D, 40 files.
 - Poly Haven / ambientCG / OpenGameArt / Quaternius / Freesound quedaron como candidatos para texturas/props/audio, revisando licencia por asset antes de integrar.
+
+---
+
+## 9. Asset/Render Pass 2 — AAA 2026 research/application note (2026-08-17)
+
+**Objetivo corregido por el usuario:** no basta con “presentable”; el criterio de aceptación sube a **vertical slice urbana AAA-caliber diseñada en 2026**, sin copiar GTA/Rockstar ni assets/marcas/trade dress licenciados.
+
+### Research técnico incorporado
+
+Ver documento dedicado: `docs/aaa-2026-asset-render-pass-research.md`.
+
+Conclusiones aplicables a esta iteración:
+
+- **Muscle simulation / Chaos Flesh / ML Deformer:** válido como research de dirección AAA para personajes hero futuros, pero no se integra en Pass 2 porque exige asset humanoide, dataset/deformers y cook/perf gates específicos. Para el estado actual, el camino seguro es mejorar silueta/ropa/material/luz de humanoides primero.
+- **Ciudad:** el mayor retorno visual inmediato era romper el vacío/plataforma: más foreground props, storefronts, bollards, power boxes, awnings, árboles/planters y backdrop towers.
+- **Vehículo:** mantener la regla técnica: `BodyMesh` sigue siendo root/collider Chaos; mesh visual como `AuthoredBodyMesh`/arte sin colisión. No se reemplazó aún `SM_CarConceptReview`, por tanto la atribución CC-BY-4.0 sigue vigente.
+- **Licencias:** no se agregaron terceros nuevos en Pass 2. Todo el nuevo dressing urbano es C++ procedural/original con BasicShapes/Engine materials.
+
+### Cambios aplicados
+
+- `ANDWorldBuilder::BuildHeroStreetClutter()` añade dressing localizado en la ruta de screenshots packaged: power boxes, bollards, awnings, cables altos y señalética ficticia.
+- `ANDWorldBuilder::BuildUrbanBackdrop()` añade torres de fondo y guardrail/rim para reducir el look de “plataforma flotante”.
+- Se corrigió un fallo de unity build renombrando símbolos genéricos repetidos (`CubeMeshPath`, `SphereMeshPath`, `BasicShapeMatPath`, etc.) con prefijos por archivo.
+
+### Evidencia packaged
+
+```text
+BuildCookRun: BUILD SUCCESSFUL
+Runtime command: dist/Windows/NeonDistrictSandbox.exe -game -benchmark -log -unattended -nosplash
+Benchmark: === RESULT: 29 passed, 0 failed ===
+```
+
+Archivos revisados:
+
+- `dist/Windows/NeonDistrictSandbox/Saved/Benchmark/NDBenchmarkResult.txt`
+- `dist/Windows/NeonDistrictSandbox/Saved/Logs/NeonDistrictSandbox.log`
+- `dist/Windows/NeonDistrictSandbox/Saved/Screenshots/Windows/city_street.png`
+- `dist/Windows/NeonDistrictSandbox/Saved/Screenshots/Windows/player_visible.png`
+- `dist/Windows/NeonDistrictSandbox/Saved/Screenshots/Windows/npc_interaction_mei.png`
+- `dist/Windows/NeonDistrictSandbox/Saved/Screenshots/Windows/vehicle_driving.png`
+
+### Visual gate result
+
+**PASS parcial:** las capturas ya muestran más densidad urbana real: storefronts/neon, carteles, bollards, planters, árboles, props pequeños, más depth en fachadas y más actividad alrededor del vehículo/jugador.
+
+**WARN todavía abierto:** no declarar AAA final. Persisten:
+
+- horizonte/road edge aún lee como plataforma en `vehicle_driving.png`;
+- personajes siguen mannequin naranja, no ropa/roles/facial final;
+- vehículo sigue usando `SM_CarConceptReview` CC-BY review asset;
+- warnings Chaos vehicle por `Bone name for wheel 0 is not set` siguen en log;
+- audio todavía no tuvo pass final.

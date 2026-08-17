@@ -13,9 +13,9 @@
 
 namespace
 {
-	const TCHAR* CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
-	const TCHAR* BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
+	const TCHAR* WeaponPickup_CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* WeaponPickup_SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* WeaponPickup_BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 }
 
 ANDWeaponPickup::ANDWeaponPickup()
@@ -50,13 +50,13 @@ ANDWeaponPickup::ANDWeaponPickup()
 	GlowCore->SetRelativeScale3D(FVector(0.14f));
 	GlowCore->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, CubeMeshPath))
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, WeaponPickup_CubeMeshPath))
 	{
 		Body->SetStaticMesh(Cube);
 		Barrel->SetStaticMesh(Cube);
 		Grip->SetStaticMesh(Cube);
 	}
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, SphereMeshPath))
+	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, WeaponPickup_SphereMeshPath))
 	{
 		GlowCore->SetStaticMesh(Sphere);
 	}
@@ -73,7 +73,7 @@ void ANDWeaponPickup::Tint(UStaticMeshComponent* Mesh, const FLinearColor& Color
 	{
 		return;
 	}
-	if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+	if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, WeaponPickup_BasicShapeMatPath))
 	{
 		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Mat, this);
 		MID->SetVectorParameterValue(TEXT("Color"), Color);

@@ -72,6 +72,8 @@ private:
 	void BuildTrafficSignal(FVector Location, float YawDegrees);
 	void BuildRoadSign(FVector Location, const FLinearColor& Color, float YawDegrees);
 	void BuildBarrierCones(FVector Location, float YawDegrees);
+	void BuildUrbanBackdrop();
+	void BuildHeroStreetClutter();
 	void BuildUrbanTree(FVector Location, float Scale = 1.0f);
 	void BuildPlanter(FVector Location, float YawDegrees = 0.0f);
 	void BuildPoliceCruiserProp(FVector Location, float YawDegrees);

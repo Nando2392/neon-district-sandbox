@@ -19,13 +19,13 @@
 
 namespace
 {
-	const TCHAR* CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
-	const TCHAR* BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
+	const TCHAR* NPC_CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* NPC_SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* NPC_BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 	// Engine-cooked humanoid mannequin (head, torso, limbs, face) + walk anims.
-	const TCHAR* MannequinMeshPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP");
-	const TCHAR* MannequinAnimBPPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
-	const TCHAR* MannequinMatPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_Mat.TutorialTPP_Mat");
+	const TCHAR* NPC_MannequinMeshPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP");
+	const TCHAR* NPC_MannequinAnimBPPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
+	const TCHAR* NPC_MannequinMatPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_Mat.TutorialTPP_Mat");
 
 	void TintPart(UStaticMeshComponent* Mesh, UObject* Owner, const FLinearColor& Color, float Emissive = 0.0f)
 	{
@@ -33,7 +33,7 @@ namespace
 		{
 			return;
 		}
-		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, NPC_BasicShapeMatPath))
 		{
 			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EngineMat, Owner);
 			MID->SetVectorParameterValue(TEXT("Color"), Color);
@@ -56,13 +56,13 @@ ANDNPCCharacter::ANDNPCCharacter()
 	{
 		Skel->SetGenerateOverlapEvents(false);
 		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		if (USkeletalMesh* Mannequin = LoadObject<USkeletalMesh>(nullptr, MannequinMeshPath))
+		if (USkeletalMesh* Mannequin = LoadObject<USkeletalMesh>(nullptr, NPC_MannequinMeshPath))
 		{
 			Skel->SetSkeletalMesh(Mannequin);
 			Skel->SetVisibility(true);
 			Skel->SetRelativeLocation(FVector(0, 0, -88.0f));
 			Skel->SetRelativeScale3D(FVector(0.96f, 0.96f, 0.96f));
-			if (UClass* ABP = LoadObject<UClass>(nullptr, MannequinAnimBPPath))
+			if (UClass* ABP = LoadObject<UClass>(nullptr, NPC_MannequinAnimBPPath))
 			{
 				Skel->SetAnimInstanceClass(ABP);
 			}
@@ -148,7 +148,7 @@ ANDNPCCharacter::ANDNPCCharacter()
 	NPCAccessory->SetRelativeLocation(FVector(2.0f, -24.0f, 42.0f));
 	NPCAccessory->SetRelativeScale3D(FVector(0.36f, 0.06f, 0.30f));
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, CubeMeshPath))
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, NPC_CubeMeshPath))
 	{
 		NPCVisual->SetStaticMesh(Cube);
 		NPCHair->SetStaticMesh(Cube);
@@ -160,7 +160,7 @@ ANDNPCCharacter::ANDNPCCharacter()
 		NPCRightFoot->SetStaticMesh(Cube);
 		NPCAccessory->SetStaticMesh(Cube);
 	}
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, SphereMeshPath))
+	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, NPC_SphereMeshPath))
 	{
 		NPCHead->SetStaticMesh(Sphere);
 		NPCLeftHand->SetStaticMesh(Sphere);
@@ -238,7 +238,7 @@ void ANDNPCCharacter::ConfigureNPC(bool bInPolice, const FString& InDisplayName,
 	// distinguishable in screenshots (outfit color + police cap accent).
 	if (USkeletalMeshComponent* Skel = GetMesh())
 	{
-		if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, MannequinMatPath))
+		if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NPC_MannequinMatPath))
 		{
 			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Mat, this);
 			MID->SetVectorParameterValue(TEXT("Color"), RoleColor);

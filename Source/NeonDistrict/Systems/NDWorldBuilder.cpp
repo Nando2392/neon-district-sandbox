@@ -38,8 +38,8 @@
 
 namespace
 {
-	const TCHAR* CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* CylinderMeshPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	const TCHAR* World_CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* World_CylinderMeshPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 }
 
 ANDWorldBuilder::ANDWorldBuilder()
@@ -221,7 +221,7 @@ UStaticMeshComponent* ANDWorldBuilder::AddBox(FVector Location, FVector Scale, c
 	UMaterial* MaterialOverride, FVector RelativeRotation)
 {
 	UStaticMeshComponent* Comp = NewObject<UStaticMeshComponent>(this);
-	Comp->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, CubeMeshPath));
+	Comp->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, World_CubeMeshPath));
 	Comp->SetMobility(EComponentMobility::Movable);
 	Comp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Comp->SetCollisionResponseToAllChannels(ECR_Block);
@@ -344,6 +344,8 @@ void ANDWorldBuilder::BuildDistrict()
 	BuildRoadSign(FVector(-3400.0f, -3200.0f, 0.0f), Palette[1].Accent, 12.0f);
 	BuildSign(FVector(-2860.0f, -3060.0f, 0.0f), Palette[0].Accent);
 	BuildBarrierCones(FVector(-2510.0f, -3170.0f, 0.0f), 86.0f);
+	BuildHeroStreetClutter();
+	BuildUrbanBackdrop();
 
 	// Weapon pickup: gameplay test + visual prop. It sits on the furnished
 	// southwest sidewalk, away from vehicle showcases and planter collision.
@@ -681,6 +683,104 @@ void ANDWorldBuilder::BuildBarrierCones(FVector Location, float YawDegrees)
 		AddBox(P + FVector(0, 0, 12.0f), FVector(34.0f, 34.0f, 24.0f), FLinearColor(1.0f, 0.28f, 0.02f), 1.0f, nullptr, Rot);
 		AddBox(P + FVector(0, 0, 36.0f), FVector(20.0f, 20.0f, 48.0f), FLinearColor(1.0f, 0.42f, 0.04f), 1.0f, nullptr, Rot);
 		AddBox(P + FVector(0, 0, 40.0f), FVector(23.0f, 23.0f, 8.0f), FLinearColor(0.96f, 0.96f, 0.86f), 0.6f, nullptr, Rot);
+	}
+}
+
+void ANDWorldBuilder::BuildUrbanBackdrop()
+{
+	// AAA-2026 direction for the packaged visual gates: the current 2x2 playable
+	// grid must not read like a floating asphalt platform. These low-detail,
+	// original background towers sit outside the benchmark gameplay corridor and
+	// block the blue void/horizon in `city_street` and `vehicle_driving` without
+	// adding licensed assets or changing mission/vehicle logic.
+	const FLinearColor DistantGlassA(0.012f, 0.018f, 0.035f);
+	const FLinearColor DistantGlassB(0.018f, 0.014f, 0.032f);
+	const FLinearColor DarkFrame(0.006f, 0.008f, 0.014f);
+	const FLinearColor WarmWindow(1.0f, 0.63f, 0.22f);
+	const FLinearColor CoolWindow(0.28f, 0.82f, 1.0f);
+
+	auto AddBackdropTower = [&](const FVector& Base, const FVector& Footprint, float Height, int32 Seed)
+	{
+		const FLinearColor Body = (Seed % 2 == 0) ? DistantGlassA : DistantGlassB;
+		AddBox(Base + FVector(0.0f, 0.0f, Height * 0.5f), FVector(Footprint.X, Footprint.Y, Height), Body, 0.0f);
+		AddBox(Base + FVector(0.0f, Footprint.Y * 0.5f + 10.0f, Height * 0.56f),
+			FVector(Footprint.X * 0.86f, 14.0f, Height * 0.74f), DarkFrame, 0.0f);
+		AddBox(Base + FVector(Footprint.X * 0.5f + 10.0f, 0.0f, Height * 0.56f),
+			FVector(14.0f, Footprint.Y * 0.86f, Height * 0.74f), DarkFrame, 0.0f);
+		for (int32 Row = 0; Row < 5; ++Row)
+		{
+			for (int32 Col = -1; Col <= 1; ++Col)
+			{
+				const bool bLit = ((Seed + Row * 7 + Col * 3) % 4) != 0;
+				const FLinearColor Lit = ((Seed + Row) % 2 == 0) ? WarmWindow : CoolWindow;
+				const float Z = 240.0f + Row * (Height * 0.13f);
+				const float X = Col * Footprint.X * 0.23f;
+				AddBox(Base + FVector(X, Footprint.Y * 0.5f + 22.0f, Z),
+					FVector(Footprint.X * 0.13f, 8.0f, 92.0f), bLit ? Lit : DistantGlassA, bLit ? 1.8f : 0.0f);
+				AddBox(Base + FVector(Footprint.X * 0.5f + 22.0f, X, Z),
+					FVector(8.0f, Footprint.Y * 0.13f, 92.0f), bLit ? Lit : DistantGlassA, bLit ? 1.8f : 0.0f);
+			}
+		}
+		// Antenna / roof plant gives skyline identity at very low geometry cost.
+		AddBox(Base + FVector(0.0f, 0.0f, Height + 95.0f), FVector(10.0f, 10.0f, 190.0f), DarkFrame, 0.0f);
+	};
+
+	AddBackdropTower(FVector(-5150.0f, -3650.0f, 0.0f), FVector(520.0f, 430.0f, 0.0f), 1540.0f, 3);
+	AddBackdropTower(FVector(-4520.0f, -4380.0f, 0.0f), FVector(430.0f, 500.0f, 0.0f), 1280.0f, 6);
+	AddBackdropTower(FVector(-3750.0f, -4750.0f, 0.0f), FVector(610.0f, 440.0f, 0.0f), 1760.0f, 9);
+	AddBackdropTower(FVector(3820.0f, -4660.0f, 0.0f), FVector(520.0f, 420.0f, 0.0f), 1420.0f, 12);
+	AddBackdropTower(FVector(4960.0f, -3480.0f, 0.0f), FVector(460.0f, 540.0f, 0.0f), 1620.0f, 15);
+
+	// Low guardrail/sea-wall rim: hides the hard edge where the road meets the
+	// void in wide-angle vehicle shots.
+	for (int32 i = 0; i < 7; ++i)
+	{
+		const float X = -5000.0f + i * 1650.0f;
+		AddBox(FVector(X, -5050.0f, 88.0f), FVector(900.0f, 24.0f, 70.0f), DarkFrame, 0.0f);
+		AddBox(FVector(X, -5078.0f, 154.0f), FVector(900.0f, 16.0f, 12.0f), FLinearColor(0.18f, 0.28f, 0.34f), 0.2f);
+	}
+}
+
+void ANDWorldBuilder::BuildHeroStreetClutter()
+{
+	// Localized foreground dressing around the packaged screenshot route. Keep it
+	// light and original: these are authored primitive props, not third-party IP.
+	auto AddPowerBox = [&](const FVector& Location, const FLinearColor& Accent)
+	{
+		AddBox(Location + FVector(0.0f, 0.0f, 58.0f), FVector(76.0f, 46.0f, 116.0f), FLinearColor(0.07f, 0.08f, 0.09f), 0.0f);
+		AddBox(Location + FVector(0.0f, -26.0f, 82.0f), FVector(54.0f, 6.0f, 18.0f), Accent, 2.2f);
+		AddBox(Location + FVector(0.0f, -29.0f, 42.0f), FVector(42.0f, 4.0f, 8.0f), FLinearColor(0.02f, 0.025f, 0.03f), 0.0f);
+	};
+	auto AddBollardRun = [&](const FVector& Start, const FVector& Step, int32 Count)
+	{
+		for (int32 i = 0; i < Count; ++i)
+		{
+			const FVector P = Start + Step * static_cast<float>(i);
+			AddBox(P + FVector(0.0f, 0.0f, 42.0f), FVector(22.0f, 22.0f, 84.0f), FLinearColor(0.055f, 0.060f, 0.070f), 0.0f);
+			AddBox(P + FVector(0.0f, 0.0f, 88.0f), FVector(28.0f, 28.0f, 9.0f), FLinearColor(0.10f, 0.90f, 1.0f), 1.6f);
+		}
+	};
+	auto AddAwning = [&](const FVector& Location, float Yaw, const FLinearColor& Color)
+	{
+		const FVector Rot(0.0f, Yaw, 0.0f);
+		AddBox(Location + FVector(0.0f, 0.0f, 250.0f), FVector(360.0f, 125.0f, 24.0f), Color, 2.8f, nullptr, Rot);
+		AddBox(Location + FVector(0.0f, -65.0f, 216.0f), FVector(330.0f, 16.0f, 66.0f), FLinearColor(0.010f, 0.014f, 0.024f), 0.0f, nullptr, Rot);
+	};
+
+	AddPowerBox(FVector(-3330.0f, -3180.0f, 0.0f), Palette[0].Accent);
+	AddPowerBox(FVector(-2870.0f, -3370.0f, 0.0f), Palette[2].Accent);
+	AddPowerBox(FVector(-2470.0f, -3025.0f, 0.0f), Palette[1].Accent);
+	AddBollardRun(FVector(-3470.0f, -2880.0f, 0.0f), FVector(145.0f, 0.0f, 0.0f), 7);
+	AddBollardRun(FVector(-2480.0f, -3470.0f, 0.0f), FVector(0.0f, 145.0f, 0.0f), 6);
+	AddAwning(FVector(-3210.0f, -2920.0f, 0.0f), 6.0f, FLinearColor(0.90f, 0.07f, 0.42f));
+	AddAwning(FVector(-2630.0f, -3375.0f, 0.0f), 90.0f, FLinearColor(0.05f, 0.72f, 0.92f));
+
+	// Simple overhead cable silhouettes add scale and break the too-clean skybox
+	// in the player/NPC shots. They are thin collision boxes well above gameplay.
+	for (int32 i = 0; i < 4; ++i)
+	{
+		const float Y = -3500.0f + i * 230.0f;
+		AddBox(FVector(-3050.0f, Y, 520.0f), FVector(1240.0f, 8.0f, 8.0f), FLinearColor(0.003f, 0.004f, 0.006f), 0.0f, nullptr, FVector(0.0f, 4.0f, 0.0f));
 	}
 }
 

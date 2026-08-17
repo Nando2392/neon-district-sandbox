@@ -24,10 +24,10 @@
 
 namespace
 {
-	const TCHAR* CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* CylinderMeshPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
-	const TCHAR* ConeMeshPath = TEXT("/Engine/BasicShapes/Cone.Cone");
-	const TCHAR* BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
+	const TCHAR* Vehicle_CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* Vehicle_CylinderMeshPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	const TCHAR* Vehicle_ConeMeshPath = TEXT("/Engine/BasicShapes/Cone.Cone");
+	const TCHAR* Vehicle_BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 
 	void TintVehiclePart(UStaticMeshComponent* Mesh, UObject* Owner, const FLinearColor& Color, float Emissive = 0.0f)
 	{
@@ -35,7 +35,7 @@ namespace
 		{
 			return;
 		}
-		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, Vehicle_BasicShapeMatPath))
 		{
 			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EngineMat, Owner);
 			MID->SetVectorParameterValue(TEXT("Color"), Color);
@@ -48,7 +48,7 @@ namespace
 
 	UMaterialInstanceDynamic* MakeRuntimeVehicleMaterial(UObject* Owner, const FLinearColor& Color, float Emissive = 0.0f)
 	{
-		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, Vehicle_BasicShapeMatPath))
 		{
 			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EngineMat, Owner);
 			MID->SetVectorParameterValue(TEXT("Color"), Color);
@@ -146,7 +146,7 @@ ANDVehicle::ANDVehicle()
 	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
 	SetRootComponent(BodyMesh);
 	// Low, wide, multi-part supercar silhouette with zero external assets.
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, CubeMeshPath))
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, Vehicle_CubeMeshPath))
 	{
 		BodyMesh->SetStaticMesh(Cube);
 		BodyMesh->SetRelativeScale3D(FVector(3.6f, 1.76f, 0.38f));
@@ -293,7 +293,7 @@ ANDVehicle::ANDVehicle()
 	WheelRL = MakeWheel(TEXT("WheelRL"), FVector(-126.0f, 116.0f, -20.0f));
 	WheelRR = MakeWheel(TEXT("WheelRR"), FVector(-126.0f, -116.0f, -20.0f));
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, CubeMeshPath))
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, Vehicle_CubeMeshPath))
 	{
 		CabinMesh->SetStaticMesh(Cube);
 		WindshieldMesh->SetStaticMesh(Cube);
@@ -311,11 +311,11 @@ ANDVehicle::ANDVehicle()
 		MirrorLeftMesh->SetStaticMesh(Cube);
 		MirrorRightMesh->SetStaticMesh(Cube);
 	}
-	if (UStaticMesh* Cone = LoadObject<UStaticMesh>(nullptr, ConeMeshPath))
+	if (UStaticMesh* Cone = LoadObject<UStaticMesh>(nullptr, Vehicle_ConeMeshPath))
 	{
 		NoseMesh->SetStaticMesh(Cone);
 	}
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, CylinderMeshPath))
+	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, Vehicle_CylinderMeshPath))
 	{
 		WheelFL->SetStaticMesh(Cylinder);
 		WheelFR->SetStaticMesh(Cylinder);
@@ -475,7 +475,7 @@ void ANDVehicle::BuildOriginalBodyVisual()
 
 	BodyVisualMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, Normals, UVs,
 		Colors, Tangents, false, false);
-	if (UMaterialInterface* Base = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+	if (UMaterialInterface* Base = LoadObject<UMaterialInterface>(nullptr, Vehicle_BasicShapeMatPath))
 	{
 		UMaterialInstanceDynamic* Paint = UMaterialInstanceDynamic::Create(Base, this);
 		Paint->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.018f, 0.24f, 0.90f));
@@ -535,7 +535,7 @@ void ANDVehicle::BuildOriginalBodyVisual()
 	AddCanopyQuad(CanopyLast + 3, CanopyLast + 2, CanopyLast + 1, CanopyLast);
 	BodyVisualMesh->CreateMeshSection_LinearColor(1, CanopyVertices, CanopyTriangles, CanopyNormals,
 		CanopyUVs, CanopyColors, CanopyTangents, false, false);
-	if (UMaterialInterface* Base = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+	if (UMaterialInterface* Base = LoadObject<UMaterialInterface>(nullptr, Vehicle_BasicShapeMatPath))
 	{
 		UMaterialInstanceDynamic* Glass = UMaterialInstanceDynamic::Create(Base, this);
 		Glass->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.01f, 0.045f, 0.10f));

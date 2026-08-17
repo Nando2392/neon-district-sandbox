@@ -19,13 +19,13 @@
 
 namespace
 {
-	const TCHAR* CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
-	const TCHAR* BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
+	const TCHAR* Player_CubeMeshPath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* Player_SphereMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* Player_BasicShapeMatPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 	// Engine-cooked humanoid mannequin (head, torso, limbs, face) + walk anims.
-	const TCHAR* MannequinMeshPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP");
-	const TCHAR* MannequinAnimBPPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
-	const TCHAR* MannequinMatPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_Mat.TutorialTPP_Mat");
+	const TCHAR* Player_MannequinMeshPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP.TutorialTPP");
+	const TCHAR* Player_MannequinAnimBPPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_AnimBlueprint.TutorialTPP_AnimBlueprint_C");
+	const TCHAR* Player_MannequinMatPath = TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/Character/TutorialTPP_Mat.TutorialTPP_Mat");
 
 	void ApplyTint(UStaticMeshComponent* Mesh, UObject* Owner, const FLinearColor& Color, float Emissive = 0.0f)
 	{
@@ -33,7 +33,7 @@ namespace
 		{
 			return;
 		}
-		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, BasicShapeMatPath))
+		if (UMaterialInterface* EngineMat = LoadObject<UMaterialInterface>(nullptr, Player_BasicShapeMatPath))
 		{
 			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EngineMat, Owner);
 			MID->SetVectorParameterValue(TEXT("Color"), Color);
@@ -60,18 +60,18 @@ ANDCharacter::ANDCharacter()
 	{
 		Skel->SetGenerateOverlapEvents(false);
 		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		if (USkeletalMesh* Mannequin = LoadObject<USkeletalMesh>(nullptr, MannequinMeshPath))
+		if (USkeletalMesh* Mannequin = LoadObject<USkeletalMesh>(nullptr, Player_MannequinMeshPath))
 		{
 			Skel->SetSkeletalMesh(Mannequin);
 			Skel->SetVisibility(true);
 			// Mannequin root sits at its feet; capsule origin is at its center.
 			Skel->SetRelativeLocation(FVector(0, 0, -88.0f));
 			Skel->SetRelativeScale3D(FVector(0.98f, 0.98f, 0.98f));
-			if (UClass* ABP = LoadObject<UClass>(nullptr, MannequinAnimBPPath))
+			if (UClass* ABP = LoadObject<UClass>(nullptr, Player_MannequinAnimBPPath))
 			{
 				Skel->SetAnimInstanceClass(ABP);
 			}
-			if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, MannequinMatPath))
+			if (UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, Player_MannequinMatPath))
 			{
 				UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Mat, this);
 				MID->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.10f, 0.13f, 0.30f));
@@ -179,7 +179,7 @@ ANDCharacter::ANDCharacter()
 	WeaponCore->SetRelativeLocation(FVector(50.0f, 48.0f, 4.0f));
 	WeaponCore->SetRelativeScale3D(FVector(0.10f));
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, CubeMeshPath))
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, Player_CubeMeshPath))
 	{
 		PlayerBody->SetStaticMesh(Cube);
 		PlayerHair->SetStaticMesh(Cube);
@@ -193,7 +193,7 @@ ANDCharacter::ANDCharacter()
 		WeaponBody->SetStaticMesh(Cube);
 		WeaponBarrel->SetStaticMesh(Cube);
 	}
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, SphereMeshPath))
+	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, Player_SphereMeshPath))
 	{
 		PlayerHead->SetStaticMesh(Sphere);
 		PlayerLeftHand->SetStaticMesh(Sphere);
