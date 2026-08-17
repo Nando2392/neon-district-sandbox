@@ -45,9 +45,9 @@ void ANDCitySpawner::BeginPlay()
 	DrivableVehicleCount = FMath::Min(DrivableVehicleCount, NDPerf::MaxDriveableVehicles);
 	TrafficVehicleCount = FMath::Min(TrafficVehicleCount, NDPerf::MaxTrafficVehicles);
 
+	SpawnVehicles();
 	SpawnCivilians();
 	SpawnPolice();
-	SpawnVehicles();
 	SpawnTraffic();
 	SpawnMissionNPCs();
 }
@@ -80,6 +80,63 @@ FVector ANDCitySpawner::PickNavSpawnPoint(float Radius) const
 	return Location;
 }
 
+bool ANDCitySpawner::IsSpawnPointSeparated(const FVector& Candidate, float MinPedestrianDistance, float MinVehicleDistance) const
+{
+	for (const FVector& ExistingPedestrian : PedestrianSpawnPoints)
+	{
+		if (FVector::Dist2D(Candidate, ExistingPedestrian) < MinPedestrianDistance)
+		{
+			return false;
+		}
+	}
+
+	for (const FVector& ExistingVehicle : VehicleSpawnPoints)
+	{
+		if (FVector::Dist2D(Candidate, ExistingVehicle) < MinVehicleDistance)
+		{
+			return false;
+		}
+	}
+
+	// Keep pedestrian spawns out of the screenshot-only vehicle showcase lane.
+	// The packaged visual gate stages the hero car at (-3800,-2700); random
+	// civilians/police were allowed to stand inside the body silhouette there,
+	// which made the screenshot look like a character was in the middle of a car.
+	static const FVector HeroVehicleShowcaseLocation(-3800.0f, -2700.0f, 0.0f);
+	if (MinVehicleDistance > 0.0f && FVector::Dist2D(Candidate, HeroVehicleShowcaseLocation) < 900.0f)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+FVector ANDCitySpawner::PickSeparatedSpawnPoint(float Radius, float MinPedestrianDistance, float MinVehicleDistance) const
+{
+	for (int32 Attempt = 0; Attempt < 24; ++Attempt)
+	{
+		const FVector Candidate = PickNavSpawnPoint(Radius);
+		if (IsSpawnPointSeparated(Candidate, MinPedestrianDistance, MinVehicleDistance))
+		{
+			return Candidate;
+		}
+	}
+
+	// Last resort: keep gameplay population counts intact, but move the fallback
+	// away from the vehicle showcase. This is safer than AlwaysSpawn overlap.
+	return FVector(-2480.0f, -3460.0f, 90.0f) + FVector(PedestrianSpawnPoints.Num() * 75.0f, 0.0f, 0.0f);
+}
+
+void ANDCitySpawner::RecordPedestrianSpawn(const FVector& Location)
+{
+	PedestrianSpawnPoints.Add(Location);
+}
+
+void ANDCitySpawner::RecordVehicleSpawn(const FVector& Location)
+{
+	VehicleSpawnPoints.Add(Location);
+}
+
 void ANDCitySpawner::SpawnCivilians()
 {
 	if (!CivilianClass)
@@ -93,12 +150,13 @@ void ANDCitySpawner::SpawnCivilians()
 
 	for (int32 i = 0; i < CivilianCount; ++i)
 	{
-		const FVector SpawnPoint = PickNavSpawnPoint(DistrictRadius);
+		const FVector SpawnPoint = PickSeparatedSpawnPoint(DistrictRadius, 190.0f, 850.0f);
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 		if (ANDNPCCharacter* NPC = GetWorld()->SpawnActor<ANDNPCCharacter>(CivilianClass, SpawnPoint, FRotator::ZeroRotator, Params))
 		{
+			RecordPedestrianSpawn(NPC->GetActorLocation());
 			NPC->ConfigureNPC(false, Names[i % Names.Num()], ENPCMissionRole::None, i % 4);
 			NPC->PatrolPoints = { SpawnPoint + FVector(FMath::FRandRange(-600.0f, 600.0f), FMath::FRandRange(-600.0f, 600.0f), 0.0f),
 				SpawnPoint + FVector(FMath::FRandRange(-400.0f, 400.0f), FMath::FRandRange(-400.0f, 400.0f), 0.0f) };
@@ -120,12 +178,13 @@ void ANDCitySpawner::SpawnPolice()
 	const TArray<FString> Names = { TEXT("Oficial Nox"), TEXT("Oficial Vega"), TEXT("Oficial Rook") };
 	for (int32 i = 0; i < PoliceCount; ++i)
 	{
-		const FVector SpawnPoint = PickNavSpawnPoint(DistrictRadius * 0.8f);
+		const FVector SpawnPoint = PickSeparatedSpawnPoint(DistrictRadius * 0.8f, 260.0f, 900.0f);
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 		if (ANDNPCCharacter* NPC = GetWorld()->SpawnActor<ANDNPCCharacter>(PoliceClass, SpawnPoint, FRotator::ZeroRotator, Params))
 		{
+			RecordPedestrianSpawn(NPC->GetActorLocation());
 			NPC->ConfigureNPC(true, Names[i % Names.Num()], ENPCMissionRole::None, 4 + i);
 			NPC->PatrolPoints = { SpawnPoint, SpawnPoint + FVector(0.0f, 300.0f, 0.0f) };
 			if (ANDNPCAIController* AIC = Cast<ANDNPCAIController>(NPC->GetController()))
@@ -145,11 +204,14 @@ void ANDCitySpawner::SpawnVehicles()
 
 	for (int32 i = 0; i < DrivableVehicleCount; ++i)
 	{
-		const FVector SpawnPoint = PickNavSpawnPoint(DistrictRadius);
+		const FVector SpawnPoint = PickSeparatedSpawnPoint(DistrictRadius, 0.0f, 1050.0f);
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-		GetWorld()->SpawnActor<ANDVehicle>(VehicleClass, SpawnPoint, FRotator(0.0f, FMath::FRandRange(-180.0f, 180.0f), 0.0f), Params);
+		if (ANDVehicle* Vehicle = GetWorld()->SpawnActor<ANDVehicle>(VehicleClass, SpawnPoint, FRotator(0.0f, FMath::FRandRange(-180.0f, 180.0f), 0.0f), Params))
+		{
+			RecordVehicleSpawn(Vehicle->GetActorLocation());
+		}
 	}
 }
 
@@ -178,6 +240,7 @@ void ANDCitySpawner::SpawnTraffic()
 
 		if (ANDTrafficVehicle* Traffic = GetWorld()->SpawnActor<ANDTrafficVehicle>(TrafficClass, SpawnPoint, SpawnRotation, Params))
 		{
+			RecordVehicleSpawn(Traffic->GetActorLocation());
 			Traffic->SetRoute(Route);
 		}
 	}
@@ -205,7 +268,7 @@ void ANDCitySpawner::SpawnMissionNPCs()
 
 	for (int32 i = 0; i < MissionNPCClasses.Num(); ++i)
 	{
-		const FVector SpawnPoint = PickNavSpawnPoint(DistrictRadius * 0.6f);
+		const FVector SpawnPoint = PickSeparatedSpawnPoint(DistrictRadius * 0.6f, 260.0f, 900.0f);
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
@@ -223,6 +286,8 @@ void ANDCitySpawner::SpawnMissionNPCs()
 				NPCSpawn = PickNavSpawnPoint(DistrictRadius * 0.5f) + FVector(0, DistrictRadius * 0.5f, 0);
 				NPC->PatrolPoints = { NPCSpawn, NPCSpawn + FVector(100.0f, 0, 0) };
 			}
+			NPC->SetActorLocation(NPCSpawn, false, nullptr, ETeleportType::TeleportPhysics);
+			RecordPedestrianSpawn(NPCSpawn);
 
 			NPC->ConfigureNPC(false, MissionNames[i], MissionRoles[i], 8 + i);
 			if (ANDNPCAIController* AIC = Cast<ANDNPCAIController>(NPC->GetController()))

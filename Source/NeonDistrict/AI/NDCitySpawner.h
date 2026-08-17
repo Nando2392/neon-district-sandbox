@@ -64,10 +64,17 @@ public:
 
 private:
 	FVector PickNavSpawnPoint(float Radius) const;
+	FVector PickSeparatedSpawnPoint(float Radius, float MinPedestrianDistance, float MinVehicleDistance) const;
+	bool IsSpawnPointSeparated(const FVector& Candidate, float MinPedestrianDistance, float MinVehicleDistance) const;
+	void RecordPedestrianSpawn(const FVector& Location);
+	void RecordVehicleSpawn(const FVector& Location);
 	void SpawnCivilians();
 	void SpawnPolice();
 	void SpawnVehicles();
 	void SpawnTraffic();
 	void SpawnMissionNPCs();
 	TArray<USplineComponent*> CollectTrafficRoutes() const;
+
+	TArray<FVector> PedestrianSpawnPoints;
+	TArray<FVector> VehicleSpawnPoints;
 };

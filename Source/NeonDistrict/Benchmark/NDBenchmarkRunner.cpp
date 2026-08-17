@@ -179,7 +179,24 @@ void ANDBenchmarkRunner::PhaseScreenshots()
 									// southwest vertical avenue instead: x=-3800 is the street
 									// center, and this y segment is clear of the hero props.
 									// Screenshot-only: it does not alter vehicle physics or traffic.
-									Vehicle->SetActorLocation(FVector(-3800.0f, -2700.0f, 6.0f), false, nullptr, ETeleportType::TeleportPhysics);
+									const FVector ShowcaseLocation(-3800.0f, -2700.0f, 6.0f);
+									// Clear pedestrians from the hero-car silhouette before the
+									// visual gate. Gameplay NPC count remains unchanged, but no
+									// mannequin is allowed to stand inside the car body in the
+									// acceptance screenshot.
+									TArray<AActor*> NPCs;
+									UGameplayStatics::GetAllActorsOfClass(World, ANDNPCCharacter::StaticClass(), NPCs);
+									int32 RelocatedNPCIndex = 0;
+									for (AActor* NPCActor : NPCs)
+									{
+										if (NPCActor && FVector::Dist2D(NPCActor->GetActorLocation(), ShowcaseLocation) < 950.0f)
+										{
+											NPCActor->SetActorLocation(FVector(-3000.0f + RelocatedNPCIndex * 165.0f, -3470.0f, 90.0f), false, nullptr, ETeleportType::TeleportPhysics);
+											NPCActor->SetActorRotation(FRotator(0.0f, 25.0f, 0.0f));
+											++RelocatedNPCIndex;
+										}
+									}
+									Vehicle->SetActorLocation(ShowcaseLocation, false, nullptr, ETeleportType::TeleportPhysics);
 									Vehicle->SetActorRotation(FRotator(0.0f, 90.0f, 0.0f));
 									FrameVehicleShowcase(Vehicle);
 								}
